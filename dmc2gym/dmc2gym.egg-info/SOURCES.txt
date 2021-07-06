@@ -1,3 +1,4 @@
+LICENSE
 README.md
 setup.py
 dmc2gym/__init__.py

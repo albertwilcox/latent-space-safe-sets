@@ -9,7 +9,13 @@ Create a virtual environment with python 3.7 and activate it:
 
 ```source venv/bin/activate```
 
-Install our customized DeepMind Control Suite:
+From the latent-safe-sets directory, install this package and most of 
+its dependencies using
+
+```pip install -e .```
+
+If you would like to run experiments with the reacher environment, 
+install our customized DeepMind Control Suite:
 
 ```cd dm_control```
 
@@ -19,13 +25,8 @@ Install our customized DeepMind Control Suite:
 
 ```pip install -e .```
 
-From the latent-safe-sets directory, install this package
 
-```pip install -e .```
 
-and install all necessary requirements
-
-``pip install -r requirements.txt``
 
 
 ## Instructions to run LS3
@@ -126,4 +127,4 @@ For the reacher environment:
 
 For the sequential pushing environment:
 
-```python scripts/mpc_learning.py --env push --val_ensemble --plan_hor 5 --safe_set_bellman_coef 0.3 --enc_checkpoint PATH_TO_VAE```
+```python scripts/mpc_learning.py --env push --val_ensemble --plan_hor 3 --safe_set_bellman_coef 0.8 --enc_checkpoint PATH_TO_VAE```

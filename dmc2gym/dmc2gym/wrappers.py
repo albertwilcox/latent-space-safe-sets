@@ -58,6 +58,7 @@ class DMCWrapper(core.Env):
         self._channels_first = channels_first
         self._frozen = False
         self._n_steps = 0
+        self.horizon = 100
 
         # create task
         self._env = suite.load(
@@ -192,7 +193,7 @@ class DMCWrapper(core.Env):
         return obs, reward, done, extra
 
     def reset(self, **kwargs):
-        time_step = self._env.reset(**kwargs)
+        time_step = self._env.reset()
         self.current_state = _flatten_obs(time_step.observation)
         obs = self._get_obs(time_step)
         self._frozen = False

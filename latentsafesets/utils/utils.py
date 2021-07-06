@@ -1,4 +1,3 @@
-import dmc2gym
 import torch
 import torch.nn as nn
 import numpy as np
@@ -152,6 +151,8 @@ def make_env(params, monitoring=False):
     if env_name == 'spb':
         env = SimplePointBot(True)
     elif env_name == 'reacher':
+        import dmc2gym
+
         env = dmc2gym.make(domain_name='reacher', task_name='hard', seed=params['seed'],
                            from_pixels=True, visualize_reward=False, channels_first=True)
     elif env_name == 'push':

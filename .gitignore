@@ -36,3 +36,4 @@ ant.pdf
 plot_data
 dgx_umount.sh
 umount_sshfs.sh
+dmc2gym/dmc2gym.egg-info/

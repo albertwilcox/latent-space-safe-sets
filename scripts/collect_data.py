@@ -57,10 +57,7 @@ def main():
     data_counts = params['data_counts']
 
     for teacher, data_dir, count in list(zip(teachers, data_dirs, data_counts)):
-        try:
-            generate_teacher_demo_data(env, data_dir, teacher, count, True, logdir)
-        except RuntimeError:
-            continue
+        generate_teacher_demo_data(env, data_dir, teacher, count, True, logdir)
 
 
 if __name__ == '__main__':

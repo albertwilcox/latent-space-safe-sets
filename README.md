@@ -1,6 +1,21 @@
 # Latent Space Safe Sets
 Code for 'LS3: Latent Space Safe Sets for Long-Horizon Visuomotor Control of Iterative Tasks'
 
+[Read the paper](https://arxiv.org/abs/2107.04775)
+
+### Bibtex
+
+```
+@misc{wilcox2021ls3,
+      title={LS3: Latent Space Safe Sets for Long-Horizon Visuomotor Control of Iterative Tasks}, 
+      author={Albert Wilcox and Ashwin Balakrishna and Brijen Thananjeyan and Joseph E. Gonzalez and Ken Goldberg},
+      year={2021},
+      eprint={2107.04775},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
+
 ## Installation
 
 Create a virtual environment with python 3.7 and activate it:

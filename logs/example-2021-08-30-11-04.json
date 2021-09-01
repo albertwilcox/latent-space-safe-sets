@@ -1,0 +1,53 @@
+{
+    "cloth": {
+        "color_pts": "diag1",
+        "damping": 2.0,
+        "density": 200.0,
+        "enable_bending": true,
+        "enable_shearing": true,
+        "enable_structural": true,
+        "height": 1,
+        "ks": 5000.0,
+        "num_height_points": 25,
+        "num_width_points": 25,
+        "orientation": 1,
+        "pin_cond": "y=0",
+        "plane_friction": 1.0,
+        "tear_thresh": 2.0,
+        "thickness": 0.02,
+        "width": 1
+    },
+    "env": {
+        "clip_act_space": false,
+        "delta_actions": true,
+        "force_grab": false,
+        "grip_radius": 0.003,
+        "iters_grip_rest": 300,
+        "iters_pull_max": 400,
+        "iters_rest": 1000,
+        "iters_up": 80,
+        "iters_up_rest": 80,
+        "max_actions": 10,
+        "max_z_threshold": 5,
+        "obs_type": "blender",
+        "oracle_reveal": "False",
+        "reduce_factor": 0.002,
+        "reward_type": "coverage-delta",
+        "updates_per_move": 1,
+        "use_depth": "False",
+        "use_dom_rand": "True",
+        "use_rgbd": "True"
+    },
+    "frames_per_sec": 30,
+    "init": {
+        "debug_matplotlib": false,
+        "render_opengl": false,
+        "type": "easy-start"
+    },
+    "log": {
+        "file": "logs/example.log",
+        "level": "debug"
+    },
+    "seed": 1337,
+    "simulation_steps": 30
+}

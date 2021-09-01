@@ -11,7 +11,11 @@ from tqdm import tqdm, trange
 
 from latentsafesets.utils.replay_buffer_encoded import EncodedReplayBuffer
 from latentsafesets.utils.replay_buffer import ReplayBuffer
-from gym.wrappers import FrameStack
+import gym.wrappers as wrappers
+#from ..envs.softgym.softgym.envs.rope_flatten import RopeFlattenEnv
+#from ..envs.softgym.softgym.envs.cloth_flatten import ClothFlattenEnv
+from ..envs.gymcloth.gym_cloth.envs.cloth_env import ClothEnv
+
 
 log = logging.getLogger("utils")
 
@@ -157,11 +161,37 @@ def make_env(params, monitoring=False):
                            from_pixels=True, visualize_reward=False, channels_first=True)
     elif env_name == 'push':
         env = PushEnv()
+    elif env_name == 'rope':
+        env = RopeFlattenEnv(observation_mode='cam_rgb',
+        action_mode='picker',
+        num_picker=2,
+        render=True,
+        headless=True,
+        horizon=50,
+        action_repeat=8,
+        render_mode='cloth',
+        num_variations=1000,
+        use_cached_states=True,
+        deterministic=False)
+    elif env_name == 'cloth':
+        env = ClothFlattenEnv(observation_mode='cam_rgb',
+        action_mode='picker',
+        num_picker=2,
+        render=True,
+        headless=True,
+        horizon=100,
+        action_repeat=8,
+        render_mode='cloth',
+        num_variations=1000,
+        use_cached_states=True,
+        deterministic=False)
+    elif env_name == 'gym-cloth':
+        env = ClothEnv('/home/zaynahjaved/latent-space-safe-sets/latentsafesets/envs/gymcloth/cfg/demo_render.yaml')
     else:
         raise NotImplementedError
 
     if params['frame_stack'] > 1:
-        env = FrameStack(env, params['frame_stack'])
+        env = wrappers.FrameStack(env, params['frame_stack'])
 
     if monitoring:
         env = SimpleVideoSaver(env, os.path.join(params['logdir'], 'videos'))

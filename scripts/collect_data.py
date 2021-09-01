@@ -2,7 +2,7 @@ from latentsafesets.utils.arg_parser import parse_args
 import latentsafesets.utils as utils
 from latentsafesets.utils.teacher import ConstraintTeacher, ReacherTeacher,\
     ReacherConstraintTeacher, StrangeTeacher, PushTeacher, OutburstPushTeacher, \
-    SimplePointBotTeacher
+    SimplePointBotTeacher, RopeTeacher, ClothTeacher, GymClothTeacher
 import latentsafesets.utils.plot_utils as pu
 
 import logging
@@ -20,6 +20,7 @@ env_teachers = {
     'push': [
         PushTeacher, OutburstPushTeacher
     ],
+    'rope': [RopeTeacher], 'cloth': [ClothTeacher], 'gym-cloth': [GymClothTeacher]
 }
 
 

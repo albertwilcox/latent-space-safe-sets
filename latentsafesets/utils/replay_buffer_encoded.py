@@ -1,6 +1,11 @@
 import numpy as np
-import latentsafesets.utils.pytorch_utils as ptu
 
+def torchify(x):
+    if type(x) is not torch.Tensor and type(x) is not np.ndarray:
+        x = np.array(x)
+    if type(x) is not torch.Tensor:
+        x = torch.FloatTensor(x)
+    return x.to(TORCH_DEVICE)
 
 class EncodedReplayBuffer:
     """
@@ -42,7 +47,7 @@ class EncodedReplayBuffer:
             new_data = np.array(transition[key])
             if key in self.im_keys:
                 im = np.array(transition[key])
-                im = ptu.torchify(im)
+                im = torchify(im)
                 new_data_mean, new_data_log_std = self.encoder(im[None] / 255)
                 new_data_mean = new_data_mean.squeeze().detach().cpu().numpy()
                 new_data_log_std = new_data_log_std.squeeze().detach().cpu().numpy()

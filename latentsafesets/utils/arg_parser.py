@@ -54,7 +54,7 @@ def add_controller_args(parser):
 
 def add_encoder_args(parser):
     # Latent embedding params
-    parser.add_argument('--d_latent', type=int, default=32,
+    parser.add_argument('--d_latent', type=int, default=64,
                         help='Size of latent space embedding')
     parser.add_argument('--enc_lr', type=float, default=1e-4,
                         help='Learning rate of encoder/decoder')
@@ -202,6 +202,16 @@ def add_env_options(params):
 
         params['frame_stack'] = 1
         params['horizon'] = 150
+    elif params['env'] == 'rope':
+        params['data_dirs'] = ['RopeSoftgym']
+        params['frame_stack'] = 1
+        params['data_counts'] = [50,50]
+        params['buffer_size'] = 40000
+    elif params['env'] == 'cloth' or params['env'] == 'gym-cloth':
+        params['data_dirs'] = ['Cloth']
+        params['frame_stack'] = 1
+        params['data_counts'] = [10000]
+        params['buffer_size'] = 100000
     if params['frame_stack'] == 1:
         params['d_obs'] = (3, 64, 64)
     else:

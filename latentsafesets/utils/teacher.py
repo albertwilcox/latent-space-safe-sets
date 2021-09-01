@@ -34,7 +34,7 @@ class AbstractTeacher(ABC):
         """
         self.reset()
         transitions = []
-        obs = self.env.reset(random_start=self.random_start)
+        obs = self.env.reset()
         # state = np.zeros((0, 0))
         state = None
         done = False
@@ -55,11 +55,11 @@ class AbstractTeacher(ABC):
             next_obs, reward, done, info = self.env.step(action_input)
             transition = {'obs': obs, 'action': tuple(action), 'reward': float(reward),
                           'next_obs': next_obs, 'done': int(done),
-                          'constraint': int(info['constraint']), 'safe_set': 0,
+                          'constraint': 0, 'safe_set': 0,
                           'on_policy': int(self.on_policy)}
             # print({k: v.dtype for k, v in transition.items() if 'obs' in k})
             transitions.append(transition)
-            state = info['next_state']
+            state = None # info['next_state']
             obs = next_obs
 
             if done:
@@ -143,6 +143,21 @@ class ReacherTeacher(AbstractTeacher):
         act = goal - angle
         act = np.clip(act, -1, 1)
         return act
+
+class RopeTeacher(AbstractTeacher):
+    def __init__(self, env, noisy=False):
+        super().__init__(env, horizon=15)
+        self.horizon = 15
+
+class ClothTeacher(AbstractTeacher):
+    def __init__(self, env, noisy=False):
+        super().__init__(env, horizon=15)
+        self.horizon = 15
+
+class GymClothTeacher(AbstractTeacher):
+    def __init__(self,env,noisy=False):
+        super().__init__(env,noisy=noisy,horizon=20)
+        self.horizon = 20 
 
 
 class ReacherConstraintTeacher(AbstractTeacher):

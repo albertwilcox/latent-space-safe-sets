@@ -20,7 +20,7 @@ def main():
     for trajectory in tqdm(demo_trajectories):
         for frame in trajectory:
             if frame_stack == 1:
-                im = Image.fromarray(frame['obs'].transpose((1, 2, 0)))
+                im = Image.fromarray(frame['obs']) #.transpose((1, 2, 0)))
                 im.save(os.path.join(save_folder, '%d.png' % i))
             else:
                 for j in range(frame_stack):

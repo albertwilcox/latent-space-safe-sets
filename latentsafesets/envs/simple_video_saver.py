@@ -1,5 +1,5 @@
 import gym
-from gym.wrappers import LazyFrames
+import gym.wrappers as wrappers
 import os
 
 import moviepy.editor as mpy
@@ -17,7 +17,7 @@ class SimpleVideoSaver(gym.Wrapper):
 
     def step(self, action):
         next_obs, reward, done, info = self.env.step(action)
-        if type(next_obs) == LazyFrames:
+        if type(next_obs) == wrappers.frame_stack.LazyFrames:
             next_obs_in = next_obs[0]
         else:
             next_obs_in = next_obs

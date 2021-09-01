@@ -58,10 +58,11 @@ class VAEEncoder(nn.Module):
         self.fc2 = nn.Linear(h_dim, d_latent)
 
     def forward(self, x):
-#        print(x.shape)
+        #print(x.shape)
         batch_dims = x.shape[:-len(self.d_obs)]
         if len(batch_dims) == 0:
             batch_dims = (1,)
+        #print(self.d_in)
         observation = x.reshape(-1, *self.d_in)
 
         z = self.encoder(observation)

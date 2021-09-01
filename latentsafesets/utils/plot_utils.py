@@ -4,7 +4,7 @@ from latentsafesets.envs import SimplePointBot
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gym.wrappers import LazyFrames
+import gym.wrappers as wrappers #import LazyFrames
 
 from moviepy.editor import VideoClip
 
@@ -58,10 +58,10 @@ def make_movie(trajectory, file):
     for frame in trajectory:
         if type(frame) == dict:
             frame = frame['obs']
-        if type(frame) == LazyFrames:
-            frame = frame[0]
+        #if type(frame) == wrappers.frame_stack.LazyFrames:
+         #   frame = frame[0]
         if type(frame) == np.ndarray:
-            ims.append(float_to_int(frame.transpose((1, 2, 0))))
+            ims.append(float_to_int(frame))#float_to_int(frame.transpose((1, 2, 0))))
             # print(float_to_int(frame.transpose((1, 2, 0))).shape)
         else:
             raise ValueError

@@ -8,7 +8,7 @@ Code for 'LS3: Latent Space Safe Sets for Long-Horizon Visuomotor Control of Ite
 ```
 @inproceedings{LS3,
     title={LS3: Latent Space Safe Sets for Long-Horizon Visuomotor Control of Sparse Reward Iterative Tasks},
-    author={Wilcox*, Albert and Balakrishna*, Ashwin and Thananjeyan, Brijen and Gonzalez, Joseph E. and Goldberg, Ken},
+    author={Wilcox, Albert and Balakrishna, Ashwin and Thananjeyan, Brijen and Gonzalez, Joseph E. and Goldberg, Ken},
     booktitle={Conference on Robot Learning (CoRL)},
     year={2021},
     organization={PMLR}

@@ -98,7 +98,7 @@ class CEMSafeSetPolicy(Policy):
                 num_constraint_satisfying = sum(values > -1e5)
                 iter_num_elites = min(num_constraint_satisfying, self.num_elites)
 
-                if num_constraint_satisfying == 0:
+                if num_constraint_satisfying <= 1:
                     reset_count += 1
                     act_ss_thresh *= self.safe_set_thresh_mult
                     if reset_count > self.safe_set_thresh_mult_iters:

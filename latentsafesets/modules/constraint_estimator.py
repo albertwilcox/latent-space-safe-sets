@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 
-class ConstraintEstimator(nn.Module, EncodedModule):
+class ConstraintEstimator(nn.Module, EncodedModule):#supervised learning very similar to gi
     """
     Simple constraint predictor using binary cross entropy
     """

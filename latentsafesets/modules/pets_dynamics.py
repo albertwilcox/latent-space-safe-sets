@@ -19,30 +19,30 @@ class PETSDynamics(nn.Module, EncodedModule):
         super(PETSDynamics, self).__init__()
         EncodedModule.__init__(self, encoder)
 
-        self.d_obs = params['d_obs']
-        self.d_latent = params['d_latent']
-        self.d_act = params['d_act']
+        self.d_obs = params['d_obs']#(3, 64, 64)
+        self.d_latent = params['d_latent']#32
+        self.d_act = params['d_act']#2
 
-        self.plot_freq = params['plot_freq']
-        self.checkpoint_freq = params['checkpoint_freq']
-        self.normalize_delta = params['dyn_normalize_delta']
-        self.n_particles = params['n_particles']
+        self.plot_freq = params['plot_freq']#500
+        self.checkpoint_freq = params['checkpoint_freq']#2000
+        self.normalize_delta = params['dyn_normalize_delta']#False, but what is it?
+        self.n_particles = params['n_particles']#20
         self.trained = False
 
         # Dynamics args
-        self.n_models = params['dyn_n_models']
-        size = params['dyn_size']
-        n_layers = params['dyn_n_layers']
-        self.models = nn.ModuleList([
+        self.n_models = params['dyn_n_models']#5
+        size = params['dyn_size']#128 units as seen in the paper
+        n_layers = params['dyn_n_layers']#3 thus there are 3-1=2 hidden layers
+        self.models = nn.ModuleList([#see line 146 for definition
             ProbabilisticDynamicsModel(self.d_latent, self.d_act, size=size, n_layers=n_layers)
                 .to(ptu.TORCH_DEVICE)
             for _ in range(self.n_models)
         ])
         self.delta_rms = utils.RunningMeanStd(shape=(self.d_latent,))
 
-        self.logdir = params['logdir']
+        self.logdir = params['logdir']#'outputs/2022-07-18/19-38-58'
 
-        self.learning_rate = params['dyn_lr']
+        self.learning_rate = params['dyn_lr']#0.001 as seen in the paper
         self.param_list = []
         for model in self.models:
             self.param_list += list(model.parameters())
@@ -95,11 +95,11 @@ class PETSDynamics(nn.Module, EncodedModule):
     def predict(self, obs, act_seq, already_embedded=False):
         """
         Given the current obs, predict sequences of observations for each action sequence
-        in act_seq for each model in self.dynamics_models
+        in act_seq for each model in self.dynamics_models#(there are altogether 20 models, right?)
 
-        This corresponds to the TS-1 in the PETS paper
+        This corresponds to the TS-1 in the PETS paper#ref 43 in the LS3 paper!
         :param obs: Tensor, dimension (d_latent) if already embedded or (*d_obs)
-        :param act_seq: Tensor, dimension (num_candidates, planning_hor, d_act)
+        :param act_seq: Tensor, dimension (num_candidates, planning_hor, d_act)#here it is (1000,5,2)
         :param already_embedded: Whether or not obs is already embedded in the latent space
         :return: Final obs prediction, dimension (n_particles, num_candidates, planning_hor, d_latent)
         """
@@ -112,13 +112,17 @@ class PETSDynamics(nn.Module, EncodedModule):
 
         predicted_emb = torch.zeros((self.n_particles, num_candidates, plan_hor, self.d_latent))\
             .to(ptu.TORCH_DEVICE)
-        running_emb = emb.repeat((num_candidates * self.n_particles, 1))
-        for t in range(plan_hor):
-            act = act_seq[:, t, :]
-            act_tiled = act.repeat((self.n_particles, 1))
+        running_emb = emb.repeat((num_candidates * self.n_particles, 1))#20000!
+        for t in range(plan_hor):#H=5
+            act = act_seq[:, t, :]#shape (1000,2)
+            #print('t',t,'act',act)#when t=0 act=nan! the problem is from outside!
+            act_tiled = act.repeat((self.n_particles, 1))#([20000,32])?
             model_ind = np.random.randint(0, self.n_models)
-            model = self.models[model_ind]
+            model = self.models[model_ind]#randomly choose models?
+            #print('running_emb.shape',running_emb.shape)#torch.Size([20000, 32])
+            #print('act_tiled.shape',act_tiled.shape)#torch.Size([20000, 2])
             next_emb = model.get_next_emb(running_emb, act_tiled)
+            #print('next_emb.shape', next_emb.shape)#torch.Size([20000, 32])
             predicted_emb[:, :, t, :] = next_emb.reshape((self.n_particles, num_candidates, self.d_latent))
 
             running_emb = next_emb
@@ -146,13 +150,13 @@ class PETSDynamics(nn.Module, EncodedModule):
 class ProbabilisticDynamicsModel(nn.Module):
     def __init__(self, d_latent, d_act, n_layers=3, size=128):
         super(ProbabilisticDynamicsModel, self).__init__()
-        self.d_latent = d_latent
-        self.d_act = d_act
-        self.n_layers = n_layers
-        self.size = size
+        self.d_latent = d_latent#32
+        self.d_act = d_act#2
+        self.n_layers = n_layers#3
+        self.size = size#128
         self.delta_network = GenericNet(
             d_in=self.d_latent + self.d_act,
-            d_out=self.d_latent * 2,
+            d_out=self.d_latent * 2,#*2 means including both mean and variance
             n_layers=self.n_layers,
             size=self.size,
         )
@@ -169,22 +173,43 @@ class ProbabilisticDynamicsModel(nn.Module):
         concat = torch.cat((inp, acs), dim=1)
         delta_normalized_both = self.delta_network(concat)
         delta_normalized_mean = delta_normalized_both[:, :self.d_latent]
-        delta_normalized_logstd = delta_normalized_both[:, self.d_latent:]
-        delta_normalized_std = torch.exp(delta_normalized_logstd)
+        delta_normalized_logstd = delta_normalized_both[:, self.d_latent:]#pay close attention to the line below
+        delta_normalized_std = torch.exp(delta_normalized_logstd)+1e-6##torch.exp(delta_normalized_logstd)
+        #delta_normalized_std=torch.where(delta_normalized_std<1e-6,1e-6,delta_normalized_std)#why not working?
         dist = torch.distributions.normal.Normal(delta_normalized_mean, delta_normalized_std)
         return dist
 
     def loss(self, emb, delta_unnormalized, act):
-        delta_normalized = self._normalize_delta(delta_unnormalized)
+        delta_normalized = self._normalize_delta(delta_unnormalized)#204
         dist = self(emb, act)
         log_prob = dist.log_prob(delta_normalized)
         loss = torch.mean(log_prob)
-        return -loss
+        return -loss#equation 8 in the paper!
 
     def get_next_emb(self, emb, acs):
+        #if torch.min(emb)<=0:#it doesn't matter!
+            #print('torch.min(emb)<=0!',torch.min(emb))
+        #if torch.min(acs)<=0:#it doesn't matter!
+            #print('torch.min(acs)<=0!',torch.min(acs))
+        #if (torch.min(emb)-torch.min(acs))<=0:#it matters!!!
+            #print('(torch.min(emb)-torch.min(acs))<=0!',torch.min(emb)-torch.min(acs))
+        #if torch.min(self.delta_std)<=0:
+            #print('torch.min(delta_std)<=0!',torch.min(self.delta_std))
+        #print('embinner01', emb)#it isn't nan#the last thing I can print out before error occurs!
+        #print('acs01', acs)#this becomes nan!
+        #print('torch.min(emb)',torch.min(emb))
+        #print('torch.min(acs)', torch.min(acs))
         dist = self(emb, acs)
-        delta_normalized = dist.rsample()
-        delta = self._unnormalize_delta(delta_normalized)
+        delta_normalized = dist.rsample()#applying reparameterization trick
+        #print('torch.min(delta_normalized)',torch.min(delta_normalized))
+        #print('torch.min(self.delta_mean)',torch.min(self.delta_mean))
+        #print('torch.min(self.delta_std)', torch.min(self.delta_std))
+        delta = self._unnormalize_delta(delta_normalized)#210
+        #if torch.min(delta)<=0:#it's not a problem!#we know that big minus delta is a big problem!
+        #print('torch.min(delta)!',torch.min(delta))#<=0#how can min(delta) not to be negative!
+        #if torch.min(self.delta_std)==0:
+            #print('torch.min(delta_std)==0!',torch.min(self.delta_std))
+        #print('embinner02.shape',emb.shape)#torch.Size([20000, 32])
         return emb + delta
 
     def get_next_emb_and_loss(self, emb, delta_unnormalized, act):
@@ -208,7 +233,7 @@ class ProbabilisticDynamicsModel(nn.Module):
             return delta_unnormalized
 
     def _unnormalize_delta(self, delta_normalized):
-        if self.delta_mean is not None:
+        if self.delta_mean is not None:#big self.delta_std lead to big unnormalized delta?
             return delta_normalized * self.delta_std + self.delta_mean
         else:
             return delta_normalized

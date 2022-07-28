@@ -31,8 +31,8 @@ class SimplePointBot(Env, utils.EzPickle):
     def __init__(self, from_pixels=True,
                  walls=None,
                  start_pos=(30, 75),
-                 end_pos=(150, 75),
-                 horizon=100,
+                 end_pos=(150, 75),#a single point
+                 horizon=100,#by default
                  constr_penalty=-100,
                  goal_thresh=3,
                  noise_scale=0.125):
@@ -51,27 +51,27 @@ class SimplePointBot(Env, utils.EzPickle):
         else:
             self.observation_space = Box(-np.ones(2) * np.float('inf'),
                                          np.ones(2) * np.float('inf'))
-        self._episode_steps = 0
+        self._episode_steps = 0#start with 0!
         # self.obstacle = self._complex_obstacle(OBSTACLE_COORDS)
         if walls is None:
-            walls = [((75, 55), (100, 95))]
-        self.walls = [self._complex_obstacle(wall) for wall in walls]
+            walls = [((75, 55), (100, 95))]#the position and dimension of the wall
+        self.walls = [self._complex_obstacle(wall) for wall in walls]#140, the bound of the wall
         self.wall_coords = walls
         self._from_pixels = from_pixels
         self._image_cache = {}
 
     def step(self, a):
-        a = self._process_action(a)
+        a = self._process_action(a)#line 166, an action satisfying the constraint
         old_state = self.state.copy()
-        next_state = self._next_state(self.state, a)
-        cur_reward = self.step_reward(self.state, a)
-        self.state = next_state
+        next_state = self._next_state(self.state, a)#line 122, go to the next state with noise
+        cur_reward = self.step_reward(self.state, a)#130, the reward of the current state
+        self.state = next_state#move on to the next step
         self._episode_steps += 1
-        constr = self.obstacle(next_state)
-        self.done = self._episode_steps >= self.horizon
+        constr = self.obstacle(next_state)#line 136 to check if next_state is obstacle
+        self.done = self._episode_steps >= self.horizon#over time limit!
 
         if self._from_pixels:
-            obs = self._state_to_image(self.state)
+            obs = self._state_to_image(self.state)#line 169
         else:
             obs = self.state
         return obs, cur_reward, self.done, {
@@ -88,36 +88,36 @@ class SimplePointBot(Env, utils.EzPickle):
             if self.obstacle(self.state):
                 self.reset(True)
         else:
-            self.state = self.start_pos + np.random.randn(2)
+            self.state = self.start_pos + np.random.randn(2)#respawn around the start_pos
         self.done = False
         self._episode_steps = 0
         if self._from_pixels:
-            obs = self._state_to_image(self.state)
+            obs = self._state_to_image(self.state)#line 169
         else:
             obs = self.state
         return obs
 
     def render(self, mode='human'):
-        return self._draw_state(self.state)
+        return self._draw_state(self.state)#see line 103
 
     def _draw_state(self, state):
-        BCKGRND_COLOR = (0, 0, 0)
-        ACTOR_COLOR = (255, 0, 0)
-        OBSTACLE_COLOR = (0, 0, 255)
+        BCKGRND_COLOR = (0, 0, 0)#black
+        ACTOR_COLOR = (255, 0, 0)#red
+        OBSTACLE_COLOR = (0, 0, 255)#blue
 
-        def draw_circle(draw, center, radius, color):
+        def draw_circle(draw, center, radius, color):#draw is a few lines later!
             lower_bound = tuple(np.subtract(center, radius))
             upper_bound = tuple(np.add(center, radius))
             draw.ellipse([lower_bound, upper_bound], fill=color)
 
-        im = Image.new("RGB", (WINDOW_WIDTH, WINDOW_HEIGHT), BCKGRND_COLOR)
+        im = Image.new("RGB", (WINDOW_WIDTH, WINDOW_HEIGHT), BCKGRND_COLOR)#draw the background
         draw = ImageDraw.Draw(im)
 
         draw_circle(draw, state, 10, ACTOR_COLOR)
         for wall in self.wall_coords:
             draw.rectangle(wall, fill=OBSTACLE_COLOR, outline=(0, 0, 0), width=1)
 
-        return np.array(im)
+        return np.array(im)#you have got the image!
 
     def _next_state(self, s, a, override=False):
         if self.obstacle(s):
@@ -130,15 +130,15 @@ class SimplePointBot(Env, utils.EzPickle):
     def step_reward(self, s, a):
         """
         Returns -1 if not in goal otherwise 0
-        """
+        """#then what is the point of the goal region classifier?
         return int(np.linalg.norm(np.subtract(self.end_pos, s)) < self.goal_thresh) - 1
 
-    def obstacle(self, s):
+    def obstacle(self, s):#as long as there is one state that is dangerous, it is dangerous
         return any([wall(s) for wall in self.walls])
 
     @staticmethod
     def _complex_obstacle(bounds):
-        """
+        """#it returns a function, OK?
         Returns a function that returns true if a given state is within the
         bounds and false otherwise
         :param bounds: bounds in form [[X_min, Y_min], [X_max, Y_max]]
@@ -153,7 +153,7 @@ class SimplePointBot(Env, utils.EzPickle):
                 upper = (max_x, max_y)
                 state = np.array(state)
                 component_viol = (state > lower) * (state < upper)
-                return np.product(component_viol, axis=-1)
+                return np.product(component_viol, axis=-1)#when both are 1, it means obstacle!
             if type(state) == torch.Tensor:
                 lower = torch.from_numpy(np.array((min_x, min_y)))
                 upper = torch.from_numpy(np.array((max_x, max_y)))
@@ -163,21 +163,21 @@ class SimplePointBot(Env, utils.EzPickle):
         return obstacle
 
     @staticmethod
-    def _process_action(a):
+    def _process_action(a):#seems just to avoid saturation/to satisfy constraints
         return np.clip(a, -MAX_FORCE, MAX_FORCE)
 
-    def _state_to_image(self, state):
+    def _state_to_image(self, state):#you get the observation of the state
         def state_to_int(state):
             return int(state[0]), int(state[1])
 
-        state = state_to_int(state)
+        state = state_to_int(state)#get the coordinate of this state
         image = self._image_cache.get(state)
         if image is None:
-            image = self._draw_state(state)
+            image = self._draw_state(state)#see line 103
             image = image.transpose((2, 0, 1))
             image = (resize(image, (3, 64, 64)) * 255).astype(np.uint8)
             self._image_cache[state] = image
-        return image
+        return image#mainly to get the image
 
     def draw(self, trajectories=None, heatmap=None, plot_starts=False, board=True, file=None,
              show=False):
@@ -194,13 +194,13 @@ class SimplePointBot(Env, utils.EzPickle):
             plt.colorbar(im)
 
         if board:
-            self.draw_board(ax)
+            self.draw_board(ax)#see line 237
 
         if trajectories is not None and type(trajectories) == list:
             if type(trajectories[0]) == list:
-                self.plot_trajectories(ax, trajectories, plot_starts)
+                self.plot_trajectories(ax, trajectories, plot_starts)#line 219
             if type(trajectories[0]) == dict:
-                self.plot_trajectory(ax, trajectories, plot_starts)
+                self.plot_trajectory(ax, trajectories, plot_starts)#line 216
 
         ax.set_aspect('equal')
         ax.autoscale_view()
@@ -213,7 +213,7 @@ class SimplePointBot(Env, utils.EzPickle):
         else:
             plt.close()
 
-    def plot_trajectory(self, ax, trajectory, plot_start=False):
+    def plot_trajectory(self, ax, trajectory, plot_start=False):#line 219
         self.plot_trajectories(ax, [trajectory], plot_start)
 
     def plot_trajectories(self, ax, trajectories, plot_start=False):
@@ -227,9 +227,9 @@ class SimplePointBot(Env, utils.EzPickle):
 
         for trajectory in trajectories:
             states = np.array([frame['obs'] for frame in trajectory])
-            plt.plot(states[:, 0], WINDOW_HEIGHT - states[:, 1])
+            plt.plot(states[:, 0], WINDOW_HEIGHT - states[:, 1])#horizontal and vertical axis
             if plot_start:
-                start = states[0]
+                start = states[0]#the horizontal and vertical axis of the starting point
                 start_circle = plt.Circle((start[0], WINDOW_HEIGHT - start[1]),
                                           radius=2, color='lime')
                 ax.add_patch(start_circle)
@@ -238,7 +238,7 @@ class SimplePointBot(Env, utils.EzPickle):
         plt.xlim(0, WINDOW_WIDTH)
         plt.ylim(0, WINDOW_HEIGHT)
 
-        for wall in self.wall_coords:
+        for wall in self.wall_coords:#in simple env, there is only one wall
             width, height = np.subtract(wall[1], wall[0])
             ax.add_patch(
                 patches.Rectangle(
@@ -256,7 +256,7 @@ class SimplePointBot(Env, utils.EzPickle):
         circle = plt.Circle(self.end_pos, radius=3, color='k')
         ax.add_patch(circle)
         ax.annotate("start", xy=(self.start_pos[0], self.start_pos[1] - 8), fontsize=10,
-                    ha="center")
+                    ha="center")#just annotating the texts!
         ax.annotate("goal", xy=(self.end_pos[0], self.end_pos[1] - 8), fontsize=10, ha="center")
 
 
@@ -265,7 +265,7 @@ class SimplePointBotLong(SimplePointBot):
         super().__init__(from_pixels,
                          start_pos=(15, 20),
                          end_pos=(165, 20),
-                         walls=[((80, 55), (100, 150)),
+                         walls=[((80, 55), (100, 150)),#multiple obstacles
                                 ((30, 0), (45, 100)),
                                 ((30, 120), (45, 150)),
                                 ((135, 0), (150, 120))],

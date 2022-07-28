@@ -1,3 +1,8 @@
+
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(1, '/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets')
+
 from latentsafesets.utils.arg_parser import parse_args
 import latentsafesets.utils as utils
 from latentsafesets.utils.teacher import ConstraintTeacher, ReacherTeacher,\
@@ -51,6 +56,7 @@ def main():
     utils.init_logging(logdir)
 
     env = utils.make_env(params)
+    print('horizon',env.horizon)
 
     teachers = env_teachers[params['env']]
     data_dirs = params['data_dirs']

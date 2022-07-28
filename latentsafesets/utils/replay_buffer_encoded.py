@@ -36,12 +36,12 @@ class EncodedReplayBuffer:
 
         # assert key_set == set(transition), "Expected transition to have keys %s" % key_set
 
-        for key in key_set:
+        for key in key_set:#it is a set
             data = self.data.get(key, None)
 
             new_data = np.array(transition[key])
             if key in self.im_keys:
-                im = np.array(transition[key])
+                im = np.array(transition[key])#seems to be the image?
                 im = ptu.torchify(im)
                 new_data_mean, new_data_log_std = self.encoder(im[None] / 255)
                 new_data_mean = new_data_mean.squeeze().detach().cpu().numpy()
@@ -64,7 +64,7 @@ class EncodedReplayBuffer:
         else:
             raise ValueError("ensemble size cannot be negative")
 
-        return {key: self._extract(key, indices) for key in self.data}
+        return {key: self._extract(key, indices) for key in self.data}#106
 
     def sample_positive(self, batch_size, key, ensemble=0):
         """

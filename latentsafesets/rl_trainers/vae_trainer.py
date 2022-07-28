@@ -14,12 +14,12 @@ log = logging.getLogger("dyn train")
 
 class VAETrainer(Trainer):
     def __init__(self, params, vae: VanillaVAE, loss_plotter):
-        self.params = params
-        self.vae = vae
+        self.params = params#get the parameters for the VAE
+        self.vae = vae#get the class of the VAE
         self.loss_plotter = loss_plotter
 
-        self.frame_stack = params['frame_stack']
-        self.d_latent = params['d_latent']
+        self.frame_stack = params['frame_stack']#false in spb, true in push
+        self.d_latent = params['d_latent']#32
 
     def initial_train(self, enc_data_loader, update_dir, force_train=False):
         if self.vae.trained and not force_train:
@@ -27,27 +27,27 @@ class VAETrainer(Trainer):
 
         log.info('Beginning vae initial optimization')
 
-        for i in range(self.params['enc_init_iters']):
-            obs = enc_data_loader.sample(self.params['enc_batch_size'])
+        for i in range(self.params['enc_init_iters']):#100k default
+            obs = enc_data_loader.sample(self.params['enc_batch_size'])#256
 
             loss, info = self.vae.update(obs)
             self.loss_plotter.add_data(info)
 
-            if i % self.params['log_freq'] == 0:
+            if i % self.params['log_freq'] == 0:#default 100
                 self.loss_plotter.print(i)
-            if i % self.params['plot_freq'] == 0:
+            if i % self.params['plot_freq'] == 0:#500
                 log.info('Creating vae visualizaton')
                 self.loss_plotter.plot()
                 self.plot_vae(obs, update_dir, i=i)
-            if i % self.params['checkpoint_freq'] == 0 and i > 0:
+            if i % self.params['checkpoint_freq'] == 0 and i > 0:#2000
                 self.vae.save(os.path.join(update_dir, 'vae_%d.pth' % i))
 
-        self.vae.save(os.path.join(update_dir, 'vae.pth'))
+        self.vae.save(os.path.join(update_dir, 'vae.pth'))#that is the real last one!
 
     def update(self, replay_buffer, update_dir):
-        pass
+        pass#it means that for the VAE the initial train is enough to achieve the aim
 
-    def plot_vae(self, obs, update_dir, i=0):
+    def plot_vae(self, obs, update_dir, i=0):#plot that figure!
         if self.frame_stack == 1:
             obs = np.array([np.array(im).transpose((2, 0, 1)) for im in obs]) / 255
         else:

@@ -18,18 +18,18 @@ class GoalIndicator(nn.Module, EncodedModule):
         super(GoalIndicator, self).__init__()
         EncodedModule.__init__(self, encoder)
 
-        self.d_obs = params['d_obs']
-        self.d_latent = params['d_latent']
-        self.batch_size = params['gi_batch_size']
+        self.d_obs = params['d_obs']#(3,64,64)
+        self.d_latent = params['d_latent']#32
+        self.batch_size = params['gi_batch_size']#256
         self.targ_update_counter = 0
         self.loss_func = torch.nn.BCEWithLogitsLoss()
         self.trained = False
 
         self.net = GenericNet(self.d_latent, 1, params['gi_n_hidden'],
                               params['gi_hidden_size']) \
-            .to(ptu.TORCH_DEVICE)
+            .to(ptu.TORCH_DEVICE)#several linear+ReLU
 
-        lr = params['gi_lr']
+        lr = params['gi_lr']#1e-4 by default!
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr)
 
     def forward(self, obs, already_embedded=False):
@@ -41,7 +41,7 @@ class GoalIndicator(nn.Module, EncodedModule):
         else:
             embedding = obs
         log_probs = self.net(embedding)
-        return log_probs
+        return log_probs#familiar!
 
     def prob(self, obs, already_embedded=False):
         obs = ptu.torchify(obs)

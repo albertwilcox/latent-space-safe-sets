@@ -18,6 +18,8 @@ class AbstractTeacher(ABC):
         self.random_start = False
         if horizon is None:
             self.horizon = env.horizon
+        else:
+            self.horizon = horizon
 
     def generate_demonstrations(self, num_demos, store_noisy=True, noise_param=None):
         demonstrations = []
@@ -51,7 +53,7 @@ class AbstractTeacher(ABC):
 
             if store_noisy:
                 action = action_input
-
+            #import ipdb; ipdb.set_trace()
             next_obs, reward, done, info = self.env.step(action_input)
             transition = {'obs': obs, 'action': tuple(action), 'reward': float(reward),
                           'next_obs': next_obs, 'done': int(done),

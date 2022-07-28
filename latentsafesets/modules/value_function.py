@@ -15,24 +15,24 @@ class ValueFunction(nn.Module, EncodedModule):
         super(ValueFunction, self).__init__()
         EncodedModule.__init__(self, encoder)
 
-        self.d_obs = params['d_obs']
-        self.d_latent = params['d_latent']
-        self.discount = params['val_discount']
-        self.targ_update_frequency = params['val_targ_update_freq']
-        self.targ_update_rate = params['val_targ_update_rate']
-        self.targ_update_counter = 0
-        self.loss_func = torch.nn.SmoothL1Loss()
+        self.d_obs = params['d_obs']#(3, 64, 64)
+        self.d_latent = params['d_latent']#32
+        self.discount = params['val_discount']#gamma, 0.99
+        self.targ_update_frequency = params['val_targ_update_freq']#100#should it be called frequency or period?
+        self.targ_update_rate = params['val_targ_update_rate']#1.0
+        self.targ_update_counter = 0#what is this?
+        self.loss_func = torch.nn.SmoothL1Loss()#designate the loss function
         self.trained = False
 
-        self.value_net = GenericNet(self.d_latent, 1, params['val_n_hidden'],
+        self.value_net = GenericNet(self.d_latent, 1, params['val_n_hidden'],#default 3
                                     params['val_hidden_size']).to(ptu.TORCH_DEVICE)
         self.value_net_target = GenericNet(self.d_latent, 1, params['val_n_hidden'],
                                            params['val_hidden_size']).to(ptu.TORCH_DEVICE)
         for param in self.value_net_target.parameters():
-            param.requires_grad = False
-        self.update_target(1)
+            param.requires_grad = False#indeed
+        self.update_target(1)#see line 134
 
-        lr = params['val_lr']
+        lr = params['val_lr']#1e-4 default
         self.optimizer = torch.optim.Adam(self.value_net.parameters(), lr=lr)
 
     def forward(self, obs, already_embedded=False):
@@ -45,7 +45,7 @@ class ValueFunction(nn.Module, EncodedModule):
 
     def forward_np(self, obs, already_embedded=False):
         obs = ptu.torchify(obs)
-        values = self(obs, already_embedded)
+        values = self(obs, already_embedded)#is it using/calling forward?
         return ptu.to_numpy(values)
 
     def get_value(self, obs, already_embedded=False):
@@ -64,35 +64,35 @@ class ValueFunction(nn.Module, EncodedModule):
         self.optimizer.zero_grad()
         loss = self.loss(obs, rew, next_obs, dones, already_embedded)
         loss.backward()
-        self.step()
+        self.step()#line 122
 
         return loss.item(), {'val': loss.item()}
 
     def update_init(self, obs, rtg, already_embedded=False):
         obs = ptu.torchify(obs)
-        rtg = ptu.torchify(rtg)
+        rtg = ptu.torchify(rtg)#reward to goal
 
         self.optimizer.zero_grad()
         loss = self.loss_init(obs, rtg, already_embedded)
         loss.backward()
-        self.step()
+        self.step()#line 122
 
         return loss.item(), {'val': loss.item()}
 
     def loss(self, obs, rews, next_obs, dones, already_embedded=False):
         if not already_embedded:
-            emb = self.encoder.encode(obs).detach()
+            emb = self.encoder.encode(obs).detach()#latent state
             next_emb = self.encoder.encode(next_obs).detach()
         else:
-            emb = obs
+            emb = obs#latent state
             next_emb = next_obs
 
         val_out = self.value_net(emb).squeeze()
-        target_out = self.value_net_target(next_emb).squeeze()
-        targets = (rews + (1 - dones) * self.discount * target_out).detach()
+        target_out = self.value_net_target(next_emb).squeeze()#that is our target, value of next emb!
+        targets = (rews + (1 - dones) * self.discount * target_out).detach()#see 650 notes!
 
         # Set states in the goal to have zero value
-        zero_goal = True
+        zero_goal = True#???It may not be a bug, maybe just a way to write the code like English
         if zero_goal:
             targets = targets * rews.bool().float()
 
@@ -127,7 +127,7 @@ class ValueFunction(nn.Module, EncodedModule):
 
         # Update target function periodically
         self.targ_update_counter += 1
-        if self.targ_update_counter % self.targ_update_frequency == 0:
+        if self.targ_update_counter % self.targ_update_frequency == 0:#update the target network every 100 updates
             self.value_net_target.load_state_dict(self.value_net.state_dict())
             self.targ_update_counter = 0
 
@@ -135,7 +135,7 @@ class ValueFunction(nn.Module, EncodedModule):
         if rate == -1:
             rate = self.targ_update_rate
         if rate == 1:
-            self.value_net_target.load_state_dict(self.value_net.state_dict())
+            self.value_net_target.load_state_dict(self.value_net.state_dict())#keep it!
         else:
             for param, target_param in list(zip(self.value_net.parameters(),
                                                 self.value_net_target.parameters())):

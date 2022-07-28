@@ -16,8 +16,8 @@ class ValueEnsemble(nn.Module, EncodedModule):
         EncodedModule.__init__(self, encoder)
         self.trained = False
 
-        self.n_models = params['val_n_models']
-        self.reduction = params['val_reduction']
+        self.n_models = params['val_n_models']#default 5
+        self.reduction = params['val_reduction']#'mean'
 
         self.models = nn.ModuleList([
             ValueFunction(encoder, params) for _ in range(self.n_models)
@@ -25,7 +25,7 @@ class ValueEnsemble(nn.Module, EncodedModule):
 
     def reduce(self, out):
         if self.reduction == 'mean':
-            return torch.mean(out, dim=0)
+            return torch.mean(out, dim=0)#the mean of 5 value functions?
         elif self.reduction == 'random':
             rand = torch.randint(out.shape[0], size=(out.shape[1],), device=ptu.TORCH_DEVICE)
             return out.squeeze()[rand].diag().reshape((out.shape[1], 1))
@@ -42,9 +42,9 @@ class ValueEnsemble(nn.Module, EncodedModule):
         else:
             emb = self.encoder.encode(obs).detach()
         out = torch.cat([
-            model(emb, True)[None] for model in self.models
+            model(emb, True)[None] for model in self.models#5 of them
         ])
-        return self.reduce(out)
+        return self.reduce(out)#if mean, take the average
 
     def forward_np(self, obs, already_embedded=False):
         obs = ptu.torchify(obs)
@@ -82,19 +82,19 @@ class ValueEnsemble(nn.Module, EncodedModule):
             next_emb = self.encoder.encode(next_obs).detach()
 
         loss = torch.tensor(0., device=ptu.TORCH_DEVICE)
-        for i, model in list(enumerate(self.models)):
+        for i, model in list(enumerate(self.models)):#there are 5 of them!
             emb_batch = emb[i]
             rew_batch = rew[i]
             next_emb_batch = next_emb[i]
             dones_batch = dones[i]
             loss_batch, _ = model.update(emb_batch, rew_batch, next_emb_batch, dones_batch, True)
-            loss += loss_batch
+            loss += loss_batch#the above update is the update of value function
 
         return loss.item(), {'val': loss.item()}
 
     def update_init(self, obs, rtg, already_embedded=False):
         obs = ptu.torchify(obs)
-        rtg = ptu.torchify(rtg)
+        rtg = ptu.torchify(rtg)#rewards to go
 
         if already_embedded:
             emb = obs
@@ -111,7 +111,7 @@ class ValueEnsemble(nn.Module, EncodedModule):
         return loss.item(), {'val': loss.item()}
 
     def loss(self, obs, rew, next_obs, dones, already_embedded=False):
-        if already_embedded:
+        if already_embedded:#is it just the same as the update function?
             emb = obs
             next_emb = next_obs
         else:

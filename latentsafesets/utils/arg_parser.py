@@ -1,3 +1,8 @@
+
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(1, '/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets')
+
 import latentsafesets.utils as utils
 
 import argparse
@@ -16,7 +21,7 @@ def parse_args():
                         help='How frequently to save model checkpoints')
     parser.add_argument('--checkpoint_folder', type=str, default=None)
     parser.add_argument('--traj_per_update', default=10, type=int)
-    parser.add_argument('--num_updates', type=int, default=25)
+    parser.add_argument('--num_updates', type=int, default=30)#25)#35)#20)#
     parser.add_argument('--exper_name', type=str, default=None)
 
     add_controller_args(parser)
@@ -38,23 +43,23 @@ def parse_args():
 
 
 def add_controller_args(parser):
-    # Controller params
-    parser.add_argument('--num_candidates', type=int, default=1000,
+    # Controller params#JC: Doing CEM!
+    parser.add_argument('--num_candidates', type=int, default=1000,#1000,#No. of candidate trajectories
                         help='Number of cantidates for CEM')
-    parser.add_argument('--num_elites', type=int, default=100,
+    parser.add_argument('--num_elites', type=int, default=100,#No. of elite trajectories
                         help='Number of elites for CEM')
-    parser.add_argument('--n_particles', type=int, default=20)
-    parser.add_argument('--plan_hor', type=int, default=5,
+    parser.add_argument('--n_particles', type=int, default=20)#sample one trajectory that much times!
+    parser.add_argument('--plan_hor', type=int, default=5,#The plan horizon in MPC, right?
                         help='How many steps into the future to look when planning')
-    parser.add_argument('--max_iters', type=int, default=5,
+    parser.add_argument('--max_iters', type=int, default=5,#
                         help='How many CEM iterations')
-    parser.add_argument('--random_percent', type=float, default=1.0,
+    parser.add_argument('--random_percent', type=float, default=1.0,#1 is default#0,#you know this in the paper!
                         help='How many CEM candidates should be sampled from a new distribution')
 
 
 def add_encoder_args(parser):
     # Latent embedding params
-    parser.add_argument('--d_latent', type=int, default=32,
+    parser.add_argument('--d_latent', type=int, default=32,#default 32
                         help='Size of latent space embedding')
     parser.add_argument('--enc_lr', type=float, default=1e-4,
                         help='Learning rate of encoder/decoder')
@@ -64,8 +69,9 @@ def add_encoder_args(parser):
                         help='How many states to sample for each embedding update')
     parser.add_argument('--enc_init_iters', type=int, default=100000,
                         help='Initial training iterations')
-    parser.add_argument('--enc_checkpoint', type=str, default=None,
-                        help='File to load a CEM model from')
+    parser.add_argument('--enc_checkpoint', type=str, default='/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-13/17-24-59/vae.pth',
+                        #'outputs/2022-07-18/19-38-58/vae.pth',#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-13/17-24-59/vae.pth',#
+                        help='File to load a CEM model from')#None,
     parser.add_argument('--enc_data_aug', action='store_true')
 
 
@@ -73,11 +79,11 @@ def add_ss_args(parser):
     # General safe set params
     parser.add_argument('--safe_set_thresh', type=float, default=0.8)
     parser.add_argument('--safe_set_thresh_mult', type=float, default=0.8)
-    parser.add_argument('--safe_set_thresh_mult_iters', type=int, default=5)
+    parser.add_argument('--safe_set_thresh_mult_iters', type=int, default=5)#8)#16)#16 is crazy, but fails#
     parser.add_argument('--safe_set_type', type=str, default='bellman')
     parser.add_argument('--safe_set_batch_size', type=int, default=256,
                         help='Batch size for safe set learning')
-    parser.add_argument('--safe_set_bellman_coef', type=float, default=0.9)
+    parser.add_argument('--safe_set_bellman_coef', type=float, default=0.3)#0.8)#0.3 is original#0.9)#
     parser.add_argument('--safe_set_bellman_reduction', type=str, default='max',
                         choices=('add', 'max'))
     parser.add_argument('--safe_set_ensemble', action='store_true')
@@ -86,7 +92,9 @@ def add_ss_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--safe_set_ignore', action='store_true')
     parser.add_argument('--safe_set_update_iters', type=int, default=512)
-    parser.add_argument('--safe_set_checkpoint', type=str, default=None)
+    parser.add_argument('--safe_set_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/ss.pth')#'outputs/2022-07-20/14-46-50/update_16/ss.pth')#None)#
+    # #'outputs/2022-07-15/17-41-16/initial_train/ss.pth')#None)#'outputs/2022-07-18/22-58-04/initial_train/ss.pth')#
+    # #'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/ss.pth')#
 
     # BC Safe set params
     parser.add_argument('--bc_lr', type=float, default=1e-4, help='Learning rate for safe set')
@@ -107,7 +115,8 @@ def add_dyn_args(parser):
     parser.add_argument('--dyn_init_iters', type=int, default=10000,
                         help='Initial training iterations')
     parser.add_argument('--dyn_update_iters', type=int, default=512)
-    parser.add_argument('--dyn_checkpoint', type=str, default=None)
+    parser.add_argument('--dyn_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/dyn.pth')#'outputs/2022-07-20/14-46-50/update_16/dyn.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/dyn.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/dyn.pth')#
 
 
 def add_val_args(parser):
@@ -129,7 +138,8 @@ def add_val_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--val_reduction', type=str, default='mean')
     parser.add_argument('--val_update_iters', type=int, default=2000)
-    parser.add_argument('--val_checkpoint', type=str, default=None)
+    parser.add_argument('--val_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/val.pth')#'outputs/2022-07-20/14-46-50/update_16/val.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/val.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/val.pth')#
 
 
 def add_constr_args(parser):
@@ -145,7 +155,8 @@ def add_constr_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--constr_ignore', action='store_true')
     parser.add_argument('--constr_update_iters', type=int, default=512)
-    parser.add_argument('--constr_checkpoint', type=str, default=None)
+    parser.add_argument('--constr_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
 
 
 def add_gi_args(parser):
@@ -160,7 +171,8 @@ def add_gi_args(parser):
     parser.add_argument('--gi_init_iters', type=int, default=10000,
                         help='Initial training iterations')
     parser.add_argument('--gi_update_iters', type=int, default=512)
-    parser.add_argument('--gi_checkpoint', type=str, default=None)
+    parser.add_argument('--gi_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/gi.pth')#'outputs/2022-07-20/14-46-50/update_16/gi.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/gi.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/gi.pth')#
 
 
 def add_env_options(params):
@@ -203,9 +215,9 @@ def add_env_options(params):
         params['frame_stack'] = 1
         params['horizon'] = 150
     if params['frame_stack'] == 1:
-        params['d_obs'] = (3, 64, 64)
+        params['d_obs'] = (3, 64, 64)#3 channel images with size 64*64!
     else:
-        params['d_obs'] = (params['frame_stack'], 3, 64, 64)
+        params['d_obs'] = (params['frame_stack'], 3, 64, 64)#multiple images!
 
 
 def add_checkpoint_options(params):

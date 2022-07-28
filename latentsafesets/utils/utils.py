@@ -1,3 +1,8 @@
+
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(1, '/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets')
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -124,13 +129,13 @@ def load_replay_buffer(params, encoder=None, first_only=False):
     log.info('Loading data')
     trajectories = []
     for directory, num in list(zip(params['data_dirs'], params['data_counts'])):
-        real_dir = os.path.join('data', directory)
+        real_dir = os.path.join('/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets','data', directory)#get the trajectories
         trajectories += load_trajectories(num, file=real_dir)
         if first_only:
             print('wahoo')
             break
 
-    log.info('Populating replay buffer')
+    log.info('Populating replay buffer')#find correspondence in the cmd output
 
     # Shuffle array so that when the replay fills up it doesn't remove one dataset before the other
     random.shuffle(trajectories)
@@ -178,25 +183,25 @@ def make_modules(params, ss=False, val=False, dyn=False,
 
     modules = {}
 
-    encoder = VanillaVAE(params)
+    encoder = VanillaVAE(params)#initialize/instantiate the VAE
     if params['enc_checkpoint']:
-        encoder.load(params['enc_checkpoint'])
+        encoder.load(params['enc_checkpoint'])#load the parameters of the VAE at specfic checkpoints!
     modules['enc'] = encoder
 
     if ss:
         safe_set_type = params['safe_set_type']
         if safe_set_type == 'bc':
-            safe_set = BCSafeSet(encoder, params)
+            safe_set = BCSafeSet(encoder, params)#initialize/instantiate the safe set
         elif safe_set_type == 'bellman':
             safe_set = BellmanSafeSet(encoder, params)
         else:
             raise NotImplementedError
-        if params['safe_set_checkpoint']:
+        if params['safe_set_checkpoint']:#if we are gonna train it separately!
             safe_set.load(params['safe_set_checkpoint'])
         modules['ss'] = safe_set
 
     if val:
-        if params['val_ensemble']:
+        if params['val_ensemble']:#what are the difference
             value_func = ValueEnsemble(encoder, params).to(ptu.TORCH_DEVICE)
         else:
             value_func = ValueFunction(encoder, params).to(ptu.TORCH_DEVICE)
@@ -243,7 +248,7 @@ class RunningMeanStd(nn.Module):
         batch_mean = torch.mean(x, dim=0)
         batch_var = torch.var(x, dim=0)
         batch_count = x.shape[0]
-        self.update_from_moments(batch_mean, batch_var, batch_count)
+        self.update_from_moments(batch_mean, batch_var, batch_count)#see 248
 
     def update_from_moments(self, batch_mean, batch_var, batch_count):
         delta = batch_mean - self.mean

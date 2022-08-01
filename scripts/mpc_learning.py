@@ -44,7 +44,7 @@ if __name__ == '__main__':
     goal_indicator = modules['gi']
 
     # Populate replay buffer
-
+    #the following is loading replay buffer, rather than loading trajectories
     replay_buffer = utils.load_replay_buffer(params, encoder)#around line 123 in utils.py
 
     trainer = MPCTrainer(env, params, modules)#so that we can train MPC!

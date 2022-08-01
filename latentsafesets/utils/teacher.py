@@ -35,15 +35,16 @@ class AbstractTeacher(ABC):
         The teacher initially tries to go northeast before going to the origin
         """
         self.reset()
-        transitions = []
-        obs = self.env.reset(random_start=self.random_start)
+        transitions = []#AN EMPTY LIST
+        obs = self.env.reset(random_start=self.random_start)#obs is a 3 channel image!
+        #around line 85 in simple_point_bot.py#random_start is false by default
         # state = np.zeros((0, 0))
         state = None
         done = False
         for i in range(self.horizon):
             if state is None:
-                action = self.env.action_space.sample().astype(np.float64)
-            else:
+                action = self.env.action_space.sample().astype(np.float64)#sample between -3 and 3
+            else:#I think the control is usually either -3 or +3
                 action = self._expert_control(state, i).astype(np.float64)
             if self.noisy:
                 action_input = np.random.normal(action, self.noise_std)
@@ -52,32 +53,97 @@ class AbstractTeacher(ABC):
                 action_input = action
 
             if store_noisy:
-                action = action_input
+                action = action_input#if it not noisy, then it is just the same
             #import ipdb; ipdb.set_trace()
-            next_obs, reward, done, info = self.env.step(action_input)
+            next_obs, reward, done, info = self.env.step(action_input)#about 63 in simple_point_bot.py
             transition = {'obs': obs, 'action': tuple(action), 'reward': float(reward),
-                          'next_obs': next_obs, 'done': int(done),
+                          'next_obs': next_obs, 'done': int(done),#this is a dictionary
                           'constraint': int(info['constraint']), 'safe_set': 0,
-                          'on_policy': int(self.on_policy)}
+                          'on_policy': int(self.on_policy)}#add key and value into it!
             # print({k: v.dtype for k, v in transition.items() if 'obs' in k})
-            transitions.append(transition)
+            transitions.append(transition)#a list of dictionaries!
             state = info['next_state']
             obs = next_obs
 
-            if done:
+            if done:#it is just a time count rather than a sign of success or not!
                 break
 
         transitions[-1]['done'] = 1
 
-        rtg = 0
+        rtg = 0#reward to goal?
         ss = 0
         for frame in reversed(transitions):
             if frame['reward'] >= 0:
                 ss = 1
+            #along the way of the trajectroy, the trajectory is safe
+            frame['safe_set'] = ss#is this dynamic programming?
+            frame['rtg'] = rtg#the reward to goal at each frame!#I think this is good
+            #add a key value pair to the trajectory(key='rtg', value=rtg
+            rtg = rtg + frame['reward']
 
-            frame['safe_set'] = ss
-            frame['rtg'] = rtg
+        # assert done, "Did not reach the goal set on task completion."
+        # V = self.env.values()
+        # for i, t in enumerate(transitions):
+        #     t['values'] = V[i]
+        return transitions#100 transitions, one whole trajectory
 
+    def generate_trajectorysafety(self, noise_param=None, store_noisy=True):
+        """
+        The teacher initially tries to go northeast before going to the origin
+        """
+        self.reset()
+        transitions = []#AN EMPTY LIST
+        obs = self.env.reset(random_start=self.random_start)#obs is a 3 channel image!
+        #around line 85 in simple_point_bot.py#random_start is false by default
+        # state = np.zeros((0, 0))
+        state = None
+        done = False
+        for i in range(self.horizon):
+            if state is None:
+                action = self.env.action_space.sample().astype(np.float64)#sample between -3 and 3
+            else:#I think the control is usually either -3 or +3
+                action = self._expert_control(state, i).astype(np.float64)
+            if self.noisy:
+                action_input = np.random.normal(action, self.noise_std)
+                action_input = np.clip(action_input, self.ac_low, self.ac_high)
+            else:
+                action_input = action
+
+            if store_noisy:
+                action = action_input#if it not noisy, then it is just the same
+            #import ipdb; ipdb.set_trace()
+            next_obs, reward, done, info = self.env.stepsafety(action_input)#63 in simple_point_bot.py
+            transition = {'obs': obs, 'action': tuple(action), 'reward': float(reward),
+                          'next_obs': next_obs, 'done': int(done),#this is a dictionary
+                          'constraint': int(info['constraint']), 'safe_set': 0,
+                          'on_policy': int(self.on_policy),
+                          "rdo": info['rdo'],
+                          "rdn": info['rdn'],
+                          "hvo": info['hvo'],
+                          "hvn": info['hvn'],
+                          "hvd": info['hvd'],
+                          "state":info['state'].tolist(),
+                          "next_state":info['next_state'].tolist()
+                          }#add key and value into it!
+            # print({k: v.dtype for k, v in transition.items() if 'obs' in k})
+            transitions.append(transition)#a list of dictionaries!
+            state = info['next_state']
+            obs = next_obs
+
+            if done:#it is just a time count rather than a sign of success or not!
+                break
+
+        transitions[-1]['done'] = 1
+
+        rtg = 0#reward to goal?
+        ss = 0
+        for frame in reversed(transitions):
+            if frame['reward'] >= 0:
+                ss = 1
+            #along the way of the trajectroy, the trajectory is safe
+            frame['safe_set'] = ss#is this dynamic programming?
+            frame['rtg'] = rtg#the reward to goal at each frame!#I think this is good
+            #add a key value pair to the trajectory(key='rtg', value=rtg
             rtg = rtg + frame['reward']
 
         # assert done, "Did not reach the goal set on task completion."
@@ -94,16 +160,16 @@ class AbstractTeacher(ABC):
 
 
 class SimplePointBotTeacher(AbstractTeacher):
-    def __init__(self, env, noisy=False):
+    def __init__(self, env, noisy=False):#starting from (30,75)
         super().__init__(env, noisy)
         self.goal = (150, 75)
 
     def _expert_control(self, s, t):
-        if t < 20:
+        if t < 20:#the max speed is 3m/s, thus usually it will take 20 seconds to go from 75 to 15
             goal = np.array((30, 15))
-        elif t < 60:
+        elif t < 60:#the max speed is 3m/s, thus it will take about 40 seconds to go from 30 to 150
             goal = np.array((150, 15))
-        else:
+        else:#thus the reward is usually around -80
             goal = self.goal
 
         act = np.subtract(goal, s)
@@ -115,15 +181,15 @@ class ConstraintTeacher(AbstractTeacher):
     def __init__(self, env, noisy=True):
         super().__init__(env, noisy, on_policy=False)
         self.d = (np.random.random(2) * 2 - 1) * spb.MAX_FORCE
-        self.goal = (88, 75)
+        self.goal = (88, 75)#within the obstacle! lead to collision!
         self.random_start = True
 
     def _expert_control(self, state, i):
-        if i < 15:
+        if i < 15:#as said in the paper, random action
             return self.d
         else:
             to_obstactle = np.subtract(self.goal, state)
-            to_obstacle_normalized = to_obstactle / np.linalg.norm(to_obstactle)
+            to_obstacle_normalized = to_obstactle / np.linalg.norm(to_obstactle)#direction
             to_obstactle_scaled = to_obstacle_normalized * spb.MAX_FORCE / 2
             return to_obstactle_scaled
 

@@ -11,7 +11,7 @@ log = logging.getLogger("gi train")
 class GoalIndicatorTrainer(Trainer):
     def __init__(self, env, params, gi, loss_plotter):
         self.params = params
-        self.gi = gi
+        self.gi = gi#class GoalIndicator
         self.loss_plotter = loss_plotter
         self.env = env
 
@@ -24,8 +24,8 @@ class GoalIndicatorTrainer(Trainer):
 
         log.info('Beginning goal indicator initial optimization')
 
-        for i in range(self.params['gi_init_iters']):
-            out_dict = replay_buffer.sample(self.params['gi_batch_size'])
+        for i in range(self.params['gi_init_iters']):#10000
+            out_dict = replay_buffer.sample(self.params['gi_batch_size'])#256#get 1 step
             next_obs, rew = out_dict['next_obs'], out_dict['reward']
 
             loss, info = self.gi.update(next_obs, rew, already_embedded=True)

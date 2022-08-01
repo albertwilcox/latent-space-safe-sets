@@ -17,7 +17,7 @@ os.environ['TORCH_CUDA_ARCH_LIST']="8.6"
 log = logging.getLogger("main")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':#no use of replay buffer
 
     params = parse_args()
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     encoder_data_loader = EncoderDataLoader(params)
 
-    modules = utils.make_modules(params)
+    modules = utils.make_modules(params)#around 178 in utils.py#just load VAE
     encoder = modules['enc']
 
     loss_plotter = LossPlotter(logdir)

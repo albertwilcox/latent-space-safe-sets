@@ -25,7 +25,7 @@ class EncoderDataLoader:
         idxs = np.random.randint(self.n_images, size=batch_size)
         ims = []
         if self.frame_stack == 1:
-            template = os.path.join(self.data_dir, '%d.png')
+            template = os.path.join(self.data_dir, '%d.png')#sample an image in data_images/spb
         else:
             template = os.path.join(self.data_dir, '%d_%d.png')
         for idx in idxs:

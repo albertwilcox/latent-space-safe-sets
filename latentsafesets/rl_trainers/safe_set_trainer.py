@@ -16,7 +16,7 @@ class SafeSetTrainer(Trainer):
         self.env = env
 
         self.env_name = params['env']
-        self.ss_type = params['safe_set_type']
+        self.ss_type = params['safe_set_type']#bellman by default
         self.ensemble = params['safe_set_n_models'] if params['safe_set_ensemble'] else 0
         self.ensemble = 0
         self.batch_size = params['safe_set_batch_size']
@@ -28,7 +28,7 @@ class SafeSetTrainer(Trainer):
 
         log.info('Beginning safe set initial optimization')
 
-        for i in range(self.params['safe_set_init_iters']):
+        for i in range(self.params['safe_set_init_iters']):#10000 by default
             self._sample_and_update(replay_buffer)
 
             if i % self.params['log_freq'] == 0:

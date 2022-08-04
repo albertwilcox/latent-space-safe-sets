@@ -3,9 +3,11 @@ import sys
 # insert at 1, 0 is the script path (or '' in REPL)
 sys.path.insert(1, '/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets')
 
-from latentsafesets.rl_trainers import ConstraintTrainer
+from latentsafesets.rl_trainers import CBFdotTrainer
 import latentsafesets.utils as utils
 from latentsafesets.utils.arg_parser import parse_args
+
+#from latentsafesets.modules import CBFdotEstimator
 
 import os
 import logging
@@ -21,18 +23,18 @@ if __name__ == '__main__':
     utils.init_logging(logdir)
 
     utils.seed(params['seed'])
-    log.info('Training gi with params...')
+    log.info('Training cbfdot with params...')
     log.info(pprint.pformat(params))
 
     env = utils.make_env(params)
 
-    modules = utils.make_modules(params, constr=True)
+    modules = utils.make_modulessafety(params, cbfd=True)
     encoder = modules['enc']
-    constraint = modules['constr']
+    cbfdot = modules['cbfd']#CBFdotEstimator(encoder,params)#
 
     replay_buffer = utils.load_replay_buffer(params, encoder)
 
     loss_plotter = utils.LossPlotter(logdir)
 
-    trainer = ConstraintTrainer(env, params, constraint, loss_plotter)
+    trainer = CBFdotTrainer(env, params, cbfdot, loss_plotter)
     trainer.initial_train(replay_buffer, logdir)

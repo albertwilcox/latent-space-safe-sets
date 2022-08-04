@@ -99,49 +99,53 @@ class SimplePointBot(Env, utils.EzPickle):
             obs = self.state#it is a 2-d state
 
         if (old_state<=self.wall_coords[0][0]).all():#old_state#check it!
-            reldistold=np.linalg.norm(old_state-self.wall_coords[0][0])
+            reldistold=old_state-self.wall_coords[0][0]#np.linalg.norm()
         elif self.wall_coords[0][0][0]<=old_state[0]<=self.wall_coords[0][1][0] and old_state[1]<=self.wall_coords[0][0][1]:
-            reldistold = np.linalg.norm(old_state[1] - self.wall_coords[0][0][1])
+            reldistold = np.array([0,old_state[1] - self.wall_coords[0][0][1]])
         elif old_state[0]>=self.wall_coords[0][1][0] and old_state[1]<=self.wall_coords[0][0][1]:
-            reldistold = np.linalg.norm(old_state - (self.wall_coords[0][1][0],self.wall_coords[0][0][1]))
+            reldistold = old_state - (self.wall_coords[0][1][0],self.wall_coords[0][0][1])
         elif old_state[0]>=self.wall_coords[0][1][0] and self.wall_coords[0][0][1]<=old_state[1]<=self.wall_coords[0][1][1]:
-            reldistold = np.linalg.norm(old_state[0] - self.wall_coords[0][1][0])
+            reldistold = np.array([old_state[0] - self.wall_coords[0][1][0],0])
         elif (old_state>=self.wall_coords[0][1]).all():#old_state
-            reldistold = np.linalg.norm(old_state - self.wall_coords[0][1])
+            reldistold = old_state - self.wall_coords[0][1]
         elif self.wall_coords[0][0][0]<=old_state[0]<=self.wall_coords[0][1][0] and old_state[1]>=self.wall_coords[0][1][1]:
-            reldistold = np.linalg.norm(old_state[1] - self.wall_coords[0][1][1])
+            reldistold = np.array([0,old_state[1] - self.wall_coords[0][1][1]])
         elif old_state[0]<=self.wall_coords[0][0][0] and old_state[1]>=self.wall_coords[0][1][1]:
-            reldistold = np.linalg.norm(old_state - (self.wall_coords[0][0][0],self.wall_coords[0][1][1]))
+            reldistold = (old_state - (self.wall_coords[0][0][0],self.wall_coords[0][1][1]))
         elif old_state[0]<=self.wall_coords[0][0][0] and self.wall_coords[0][0][1]<=old_state[1]<=self.wall_coords[0][1][1]:
-            reldistold = np.linalg.norm(old_state[0] - self.wall_coords[0][0][0])
+            reldistold = np.array([old_state[0] - self.wall_coords[0][0][0],0])
         else:
             #print(old_state)#it can be [98.01472841 92.11425524]
-            reldistold=0#9.9#
-        hvalueold = reldistold ** 2 - 15 ** 2
+            reldistold=np.array([0,0])#9.9#
+        hvalueold = np.linalg.norm(reldistold) ** 2 - 15 ** 2
         if self._from_pixels:
             obs = self._state_to_image(self.state)#line 169#it is a 3-channel image
         else:
             obs = self.state#it is a 2-d state
-        if (next_state<=self.wall_coords[0][0]).all():#old_state#check it!
-            reldistnew=np.linalg.norm(next_state-self.wall_coords[0][0])
-        elif self.wall_coords[0][0][0]<=next_state[0]<=self.wall_coords[0][1][0] and next_state[1]<=self.wall_coords[0][0][1]:
-            reldistnew = np.linalg.norm(next_state[1] - self.wall_coords[0][0][1])
-        elif next_state[0]>=self.wall_coords[0][1][0] and next_state[1]<=self.wall_coords[0][0][1]:
-            reldistnew = np.linalg.norm(next_state - (self.wall_coords[0][1][0],self.wall_coords[0][0][1]))
-        elif next_state[0]>=self.wall_coords[0][1][0] and self.wall_coords[0][0][1]<=next_state[1]<=self.wall_coords[0][1][1]:
-            reldistnew = np.linalg.norm(next_state[0] - self.wall_coords[0][1][0])
-        elif (next_state>=self.wall_coords[0][1]).all():#old_state
-            reldistnew = np.linalg.norm(next_state - self.wall_coords[0][1])
-        elif self.wall_coords[0][0][0]<=next_state[0]<=self.wall_coords[0][1][0] and next_state[1]>=self.wall_coords[0][1][1]:
-            reldistnew = np.linalg.norm(next_state[1] - self.wall_coords[0][1][1])
-        elif next_state[0]<=self.wall_coords[0][0][0] and next_state[1]>=self.wall_coords[0][1][1]:
-            reldistnew = np.linalg.norm(next_state - (self.wall_coords[0][0][0],self.wall_coords[0][1][1]))
-        elif next_state[0]<=self.wall_coords[0][0][0] and self.wall_coords[0][0][1]<=next_state[1]<=self.wall_coords[0][1][1]:
-            reldistnew = np.linalg.norm(next_state[0] - self.wall_coords[0][0][0])
+        if (next_state <= self.wall_coords[0][0]).all():  # old_state#check it!
+            reldistnew = next_state - self.wall_coords[0][0]  # np.linalg.norm()
+        elif self.wall_coords[0][0][0] <= next_state[0] <= self.wall_coords[0][1][0] and next_state[1] <= \
+                self.wall_coords[0][0][1]:
+            reldistnew = np.array([0, next_state[1] - self.wall_coords[0][0][1]])
+        elif next_state[0] >= self.wall_coords[0][1][0] and next_state[1] <= self.wall_coords[0][0][1]:
+            reldistnew = next_state - (self.wall_coords[0][1][0], self.wall_coords[0][0][1])
+        elif next_state[0] >= self.wall_coords[0][1][0] and self.wall_coords[0][0][1] <= next_state[1] <= \
+                self.wall_coords[0][1][1]:
+            reldistnew = np.array([next_state[0] - self.wall_coords[0][1][0], 0])
+        elif (next_state >= self.wall_coords[0][1]).all():  # old_state
+            reldistnew = next_state - self.wall_coords[0][1]
+        elif self.wall_coords[0][0][0] <= next_state[0] <= self.wall_coords[0][1][0] and next_state[1] >= \
+                self.wall_coords[0][1][1]:
+            reldistnew = np.array([0, next_state[1] - self.wall_coords[0][1][1]])
+        elif next_state[0] <= self.wall_coords[0][0][0] and next_state[1] >= self.wall_coords[0][1][1]:
+            reldistnew = (next_state - (self.wall_coords[0][0][0], self.wall_coords[0][1][1]))
+        elif next_state[0] <= self.wall_coords[0][0][0] and self.wall_coords[0][0][1] <= next_state[1] <= \
+                self.wall_coords[0][1][1]:
+            reldistnew = np.array([next_state[0] - self.wall_coords[0][0][0], 0])
         else:
-            #print(next_state)
-            reldistnew=0#9.9#
-        hvaluenew=reldistnew**2-15**2
+            # print(old_state)#it can be [98.01472841 92.11425524]
+            reldistnew = np.array([0, 0])  # 9.9#
+        hvaluenew = np.linalg.norm(reldistnew) ** 2 - 15 ** 2
         hvd=hvaluenew-hvalueold
         return obs, cur_reward, self.done, {
             "constraint": constr,#it is also a dictionary!
@@ -149,8 +153,8 @@ class SimplePointBot(Env, utils.EzPickle):
             "state": old_state,
             "next_state": next_state,
             "action": a,#the current action!
-            "rdo":reldistold,
-            "rdn": reldistnew,
+            "rdo":reldistold,#array now!
+            "rdn": reldistnew,#array now!
             "hvo": hvalueold,
             "hvn":hvaluenew,
             "hvd":hvd

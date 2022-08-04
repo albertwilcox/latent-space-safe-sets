@@ -147,9 +147,9 @@ def load_replay_buffer(params, encoder=None, first_only=False):#it doesn't have 
 
     for trajectory in tqdm(trajectories):#trajectory is 1 traj having 100 steps
         replay_buffer.store_transitions(trajectory)#22
-
+    #finally, the self.data, a dict in the replay_buffer is filled with values from 100 trajs, each containing 100 steps
     return replay_buffer
-
+    #each key in self.data, its value is a numpy array containing 10000=100*100 pieces of info/data of each transition
 
 def make_env(params, monitoring=False):
     from latentsafesets.envs import SimplePointBot, PushEnv, SimpleVideoSaver
@@ -228,6 +228,68 @@ def make_modules(params, ss=False, val=False, dyn=False,
             constraint.load(params['constr_checkpoint'])
         modules['constr'] = constraint
 
+    return modules
+
+
+def make_modulessafety(params, ss=False, val=False, dyn=False,
+                 gi=False, constr=False,cbfd=False):
+    from latentsafesets.modules import VanillaVAE, ValueEnsemble, \
+        ValueFunction, PETSDynamics, GoalIndicator, ConstraintEstimator, BCSafeSet, \
+        BellmanSafeSet, CBFdotEstimator
+    import latentsafesets.utils.pytorch_utils as ptu
+
+    modules = {}
+
+    encoder = VanillaVAE(params)#initialize/instantiate the VAE
+    if params['enc_checkpoint']:
+        encoder.load(params['enc_checkpoint'])#load the parameters of the VAE at specfic checkpoints!
+    modules['enc'] = encoder
+
+    if ss:
+        safe_set_type = params['safe_set_type']
+        if safe_set_type == 'bc':
+            safe_set = BCSafeSet(encoder, params)#initialize/instantiate the safe set
+        elif safe_set_type == 'bellman':
+            safe_set = BellmanSafeSet(encoder, params)
+        else:
+            raise NotImplementedError
+        if params['safe_set_checkpoint']:#if we are gonna train it separately!
+            safe_set.load(params['safe_set_checkpoint'])
+        modules['ss'] = safe_set
+
+    if val:
+        if params['val_ensemble']:#what are the difference
+            value_func = ValueEnsemble(encoder, params).to(ptu.TORCH_DEVICE)
+        else:
+            value_func = ValueFunction(encoder, params).to(ptu.TORCH_DEVICE)
+        if params['val_checkpoint']:
+            value_func.load(params['val_checkpoint'])
+        modules['val'] = value_func
+
+    if dyn:
+        dynamics = PETSDynamics(encoder, params)
+        if params['dyn_checkpoint']:
+            dynamics.load(params['dyn_checkpoint'])
+        modules['dyn'] = dynamics
+
+    if gi:
+        goal_indicator = GoalIndicator(encoder, params).to(ptu.TORCH_DEVICE)
+        if params['gi_checkpoint']:
+            goal_indicator.load(params['gi_checkpoint'])
+        modules['gi'] = goal_indicator
+
+    if constr:
+        constraint = ConstraintEstimator(encoder, params).to(ptu.TORCH_DEVICE)
+        if params['constr_checkpoint']:
+            constraint.load(params['constr_checkpoint'])
+        modules['constr'] = constraint
+
+    if cbfd:
+        cbfdot = CBFdotEstimator(encoder, params).to(ptu.TORCH_DEVICE)
+        if params['cbfd_checkpoint']:
+            cbfdot.load(params['cbfd_checkpoint'])
+        modules['cbfd'] = cbfdot
+        print(modules['cbfd'])
     return modules
 
 

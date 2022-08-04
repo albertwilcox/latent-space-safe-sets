@@ -39,7 +39,7 @@ class EncodedReplayBuffer:
         for key in key_set:#it is a set
             data = self.data.get(key, None)#.get() is to get the value of a key
 
-            new_data = np.array(transition[key])#it seems already converts list to array
+            new_data = np.array(transition[key])#it seems already converts value list to array
             if key in self.im_keys:
                 im = np.array(transition[key])#seems to be the image?
                 im = ptu.torchify(im)
@@ -53,11 +53,11 @@ class EncodedReplayBuffer:
             data[self._index] = new_data#now fill one by one
             self.data[key] = data#the value of self.data[key] is a np array#the way to init a value in a dict
 
-        self._index = (self._index + 1) % self.size#no more no less, just 10000 piece of data#a queue!
+        self._index = (self._index + 1) % self.size#no more no less, just 10k pieces of data#a queue like dagger
         self._len = min(self._len + 1, self.size)#a thing saturate at self.size!
         #I think I have understood the above function!
-    def sample(self, batch_size, ensemble=0):#bs=256 by default
-        if ensemble == 0:
+    def sample(self, batch_size, ensemble=0):#bs=256 by default#it is sampling a few transitions!
+        if ensemble == 0:#len(self) is literally self.size
             indices = np.random.randint(len(self), size=batch_size)
         elif ensemble > 0:
             indices = np.random.randint(len(self), size=(ensemble, batch_size))

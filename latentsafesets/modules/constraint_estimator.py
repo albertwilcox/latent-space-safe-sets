@@ -62,7 +62,7 @@ class ConstraintEstimator(nn.Module, EncodedModule):#supervised learning very si
         return loss.item(), {'constr': loss.item()}
 
     def loss(self, next_obs, constr, already_embedded=False):
-        logits = self(next_obs, already_embedded).squeeze()
+        logits = self(next_obs, already_embedded).squeeze()#.forward!
         targets = constr
         loss = self.loss_func(logits, targets)
         return loss

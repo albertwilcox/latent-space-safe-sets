@@ -21,7 +21,7 @@ def parse_args():
                         help='How frequently to save model checkpoints')
     parser.add_argument('--checkpoint_folder', type=str, default=None)
     parser.add_argument('--traj_per_update', default=10, type=int)
-    parser.add_argument('--num_updates', type=int, default=30)#25)#35)#20)#the default is 25#
+    parser.add_argument('--num_updates', type=int, default=10)#15)#25)#30)#35)#20)#the default is 25#
     parser.add_argument('--exper_name', type=str, default=None)
 
     add_controller_args(parser)
@@ -31,6 +31,7 @@ def parse_args():
     add_val_args(parser)
     add_constr_args(parser)
     add_gi_args(parser)
+    add_cbfd_args(parser)
 
     params = vars(parser.parse_args())
 
@@ -155,8 +156,8 @@ def add_constr_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--constr_ignore', action='store_true')
     parser.add_argument('--constr_update_iters', type=int, default=512)
-    parser.add_argument('--constr_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
-    #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
+    parser.add_argument('--constr_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/constr.pth')#None)#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
 
 
 def add_gi_args(parser):
@@ -174,6 +175,24 @@ def add_gi_args(parser):
     parser.add_argument('--gi_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/gi.pth')#'outputs/2022-07-20/14-46-50/update_16/gi.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/gi.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/gi.pth')#
 
+def add_cbfd_args(parser):
+    # Constraint Estimator params
+    parser.add_argument('--cbfdot_thresh', type=float, default=0.8)
+    parser.add_argument('--cbfdot_thresh_mult', type=float, default=0.8)
+    parser.add_argument('--cbfd_lr', type=float, default=1e-4,
+                        help='Learning rate for cbfd network')
+    parser.add_argument('--cbfd_hidden_size', type=int, default=200)
+    parser.add_argument('--cbfd_n_hidden', type=int, default=3)
+    parser.add_argument('--cbfd_batch_size', type=int, default=256)
+    parser.add_argument('--cbfd_thresh', type=float, default=0.2,
+                        help='Threshold for an obs to be considered in violation of cbf dots')
+    parser.add_argument('--cbfd_init_iters', type=int, default=20000,#30000,#10000,#
+                        help='Initial training iterations')
+    parser.add_argument('--cbfd_ignore', action='store_true')
+    parser.add_argument('--cbfd_update_iters', type=int, default=512)
+    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-03/01-06-16/cbfd.pth')#None)#
+    #'outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
+    #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
 
 def add_env_options(params):
     params['horizon'] = 100

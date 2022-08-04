@@ -117,13 +117,13 @@ class AbstractTeacher(ABC):
                           'next_obs': next_obs, 'done': int(done),#this is a dictionary
                           'constraint': int(info['constraint']), 'safe_set': 0,
                           'on_policy': int(self.on_policy),
-                          "rdo": info['rdo'],
-                          "rdn": info['rdn'],
-                          "hvo": info['hvo'],
-                          "hvn": info['hvn'],
-                          "hvd": info['hvd'],
-                          "state":info['state'].tolist(),
-                          "next_state":info['next_state'].tolist()
+                          'rdo': info['rdo'].tolist(),
+                          'rdn': info['rdn'].tolist(),
+                          'hvo': info['hvo'],
+                          'hvn': info['hvn'],
+                          'hvd': info['hvd'],
+                          'state':info['state'].tolist(),
+                          'next_state':info['next_state'].tolist()
                           }#add key and value into it!
             # print({k: v.dtype for k, v in transition.items() if 'obs' in k})
             transitions.append(transition)#a list of dictionaries!

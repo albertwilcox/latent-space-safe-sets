@@ -6,3 +6,4 @@ from .pets_dynamics_trainer import PETSDynamicsTrainer
 from .trainer import Trainer
 from .safe_set_trainer import SafeSetTrainer
 from .mpc_trainer import MPCTrainer
+from .cbfdot_trainer import CBFdotTrainer

@@ -8,6 +8,7 @@ import latentsafesets.utils as utils
 import latentsafesets.utils.plot_utils as pu
 from latentsafesets.utils.arg_parser import parse_args
 from latentsafesets.rl_trainers import MPCTrainer
+#import latentsafesets.utils.pytorch_utils as ptu
 
 import os
 import logging
@@ -31,17 +32,19 @@ if __name__ == '__main__':
     logger = utils.EpochLogger(logdir)#a kind of dynamic logger?
 
     env = utils.make_env(params)#spb, reacher, etc.#around line 148 in utils
-
+    #The result is to have env=SimplePointBot in spb
     # Setting up encoder, around line 172 in utils, get all the parts equipped!
 
-    modules = utils.make_modules(params, ss=True, val=True, dyn=True, gi=True, constr=True)
-
-    encoder = modules['enc']#it is a dictionary, uh?
+    #modules = utils.make_modules(params, ss=True, val=True, dyn=True, gi=True, constr=True)
+    modules = utils.make_modulessafety(params, ss=True, val=True, dyn=True, gi=True, constr=True, cbfd=True)
+    #the result is to set up the encoder, etc.
+    encoder = modules['enc']#it is a value in a dictionary, uh?
     safe_set = modules['ss']
     dynamics_model = modules['dyn']
     value_func = modules['val']
     constraint_function = modules['constr']
     goal_indicator = modules['gi']
+    cbfdot_function = modules['cbfd']
 
     # Populate replay buffer
     #the following is loading replay buffer, rather than loading trajectories
@@ -53,7 +56,7 @@ if __name__ == '__main__':
 
     log.info("Creating policy")
     policy = CEMSafeSetPolicy(env, encoder, safe_set, value_func, dynamics_model,
-                              constraint_function, goal_indicator, params)
+                              constraint_function, goal_indicator, cbfdot_function, params)
 
     num_updates = params['num_updates']#default 25
     traj_per_update = params['traj_per_update']#default 10
@@ -76,41 +79,58 @@ if __name__ == '__main__':
             log.info("Collecting trajectory %d for update %d" % (j, i))
             transitions = []
 
-            obs = np.array(env.reset())#the obs seems to be the observation rather than obstacle
-            policy.reset()
+            obs = np.array(env.reset())#the obs seems to be the observation as image rather than obstacle
+            policy.reset()#self.mean, self.std = None, None
             done = False
 
             # Maintain ground truth info for plotting purposes
-            movie_traj = [{'obs': obs.reshape((-1, 3, 64, 64))[0]}]
-            traj_rews = []
+            movie_traj = [{'obs': obs.reshape((-1, 3, 64, 64))[0]}]#a dict
+            traj_rews = []#rews: reward
             constr_viol = False
             succ = False
             for k in trange(params['horizon']):#default 100 in spb#This is MPC
                 #print('obs.shape',obs.shape)(3,64,64)
-                action = policy.act(obs / 255)#the CEM (candidates, elites, etc.) is in here
-                next_obs, reward, done, info = env.step(action)#saRSa
-                next_obs = np.array(next_obs)#to make it a numpy array
-                movie_traj.append({'obs': next_obs.reshape((-1, 3, 64, 64))[0]})
+                #print('env.state',env.state)#env.state [35.44344669 54.30340498]
+                #action = policy.act(obs / 255)#the CEM (candidates, elites, etc.) is in here
+                #storch=ptu.torchify(env.state)#state torch
+                action = policy.actcbfd(obs/255,env.state)  # the CEM (candidates, elites, etc.) is in here
+                #next_obs, reward, done, info = env.step(action)#saRSa
+                next_obs, reward, done, info = env.stepsafety(action)  # 63 in simple_point_bot.py
+                next_obs = np.array(next_obs)#to make this image a numpy array
+                movie_traj.append({'obs': next_obs.reshape((-1, 3, 64, 64))[0]})#add this image
                 traj_rews.append(reward)
 
-                constr = info['constraint']#it use is seen a few lines later
+                constr = info['constraint']#its use is seen a few lines later
 
-                transition = {'obs': obs, 'action': action, 'reward': reward,#sARSa
-                              'next_obs': next_obs, 'done': done,
-                              'constraint': constr, 'safe_set': 0, 'on_policy': 1}
+                #transition = {'obs': obs, 'action': action, 'reward': reward,#sARSa
+                              #'next_obs': next_obs, 'done': done,
+                              #'constraint': constr, 'safe_set': 0, 'on_policy': 1}
+                transition = {'obs': obs, 'action': action, 'reward': reward,
+                              'next_obs': next_obs, 'done': done,  # this is a dictionary
+                              'constraint': constr, 'safe_set': 0,
+                              'on_policy': 1,
+                              'rdo': info['rdo'].tolist(),
+                              'rdn': info['rdn'].tolist(),
+                              'hvo': info['hvo'],
+                              'hvn': info['hvn'],
+                              'hvd': info['hvd'],
+                              'state': info['state'].tolist(),
+                              'next_state': info['next_state'].tolist()
+                              }  # add key and value into it!
+
                 transitions.append(transition)
                 obs = next_obs
-                constr_viol = constr_viol or info['constraint']
+                constr_viol = constr_viol or info['constraint']#a way to update constr_viol
                 succ = succ or reward == 0#as said in the paper, reward=0 means success!
 
                 if done:
                     break
             transitions[-1]['done'] = 1#change the last transition to success/done!
             traj_reward = sum(traj_rews)#total reward
-
+            #EpRet is episode reward, EpLen=Episode Length, EpConstr=Episode constraints
             logger.store(EpRet=traj_reward, EpLen=k+1, EpConstr=float(constr_viol))
-            all_rewards.append(traj_rews)
-            constr_viols.append(constr_viol)
+            all_rewards.append(traj_rews)#does it use any EpLen?
+            constr_viols.append(constr_viol)#whether this 100-length traj violate any constraints
             task_succ.append(succ)
             #save the result in the gift form!
             pu.make_movie(movie_traj, file=os.path.join(update_dir, 'trajectory%d.gif' % j))
@@ -127,7 +147,7 @@ if __name__ == '__main__':
 
                 rtg = rtg + transition['reward']
 
-            replay_buffer.store_transitions(transitions)
+            replay_buffer.store_transitions(transitions)#replay buffer online training
             update_rewards.append(traj_reward)
 
         mean_rew = float(np.mean(update_rewards))
@@ -149,7 +169,7 @@ if __name__ == '__main__':
         logger.log_tabular('ConstrRate', np.mean(constr_viols))
         logger.log_tabular('SuccRate', np.mean(task_succ))
         logger.dump_tabular()
-        n_episodes += traj_per_update
+        n_episodes += traj_per_update#10 by default
 
         # Update models
 

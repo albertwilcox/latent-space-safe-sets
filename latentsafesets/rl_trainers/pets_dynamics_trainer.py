@@ -19,7 +19,7 @@ class PETSDynamicsTrainer(Trainer):
 
         self.env_name = params['env']#spb/reacher/push
 
-    def initial_train(self, replay_buffer, update_dir):
+    def initial_train(self, replay_buffer, update_dir):#update_dir is the folder ended in initial_train
         if self.dynamics.trained:
             self.visualize(os.path.join(update_dir, "dyn_start.gif"), replay_buffer)
             return
@@ -27,10 +27,10 @@ class PETSDynamicsTrainer(Trainer):
         log.info('Beginning dynamics initial optimization')
 
         for i in range(self.params['dyn_init_iters']):#10000
-            out_dict = replay_buffer.sample(self.params['dyn_batch_size'],#256
-                                            ensemble=self.ensemble)
-            obs, next_obs, act = out_dict['obs'], out_dict['next_obs'], out_dict['action']
-
+            out_dict = replay_buffer.sample(self.params['dyn_batch_size'],#256#get sub-dict of corresponding indices
+                                            ensemble=self.ensemble)#59 in replay_buffer_encoded
+            obs, next_obs, act = out_dict['obs'], out_dict['next_obs'], out_dict['action']#get values of those indices
+            #this is the update of self.dynamics, rather than the update of self!
             loss, info = self.dynamics.update(obs, next_obs, act, already_embedded=True)
 
             self.loss_plotter.add_data(info)

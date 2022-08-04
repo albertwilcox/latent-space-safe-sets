@@ -38,7 +38,7 @@ class BellmanSafeSet(nn.Module, EncodedModule):
         self.t = 0
 
     def safe_set_probability(self, state, already_embedded=False):
-        logits = self(state, already_embedded)
+        logits = self(state, already_embedded)#forward
         return torch.sigmoid(logits)
 
     def safe_set_probability_np(self, states, already_embedded=False):
@@ -60,12 +60,12 @@ class BellmanSafeSet(nn.Module, EncodedModule):
             logits = self.net(embedding)
         return logits
 
-    def update(self, out_dict, already_embedded=False):
+    def update(self, out_dict, already_embedded=False):#out_dict is a sub-dict/partial dict
         self.trained = True
 
-        obs = out_dict['obs']
+        obs = out_dict['obs']#it is the value of 'obs' key of out_dict#currently still in the form of np array!
         next_obs = out_dict['next_obs']
-        ss = out_dict['safe_set']
+        ss = out_dict['safe_set']#either 0 or 1
 
         obs = ptu.torchify(obs)
         next_obs = ptu.torchify(next_obs)
@@ -77,13 +77,13 @@ class BellmanSafeSet(nn.Module, EncodedModule):
         self.step()
 
         self.t += 1
-        if self.t % 100 == 0:
+        if self.t % 100 == 0:#update it every 100 updates
             self.target_net.load_state_dict(self.net.state_dict())
 
         return loss.item(), info
 
     def loss(self, obs, next_obs, ss, already_embedded=False):
-        logits = self(obs, already_embedded).squeeze()
+        logits = self(obs, already_embedded).squeeze()#it's calling .forward!!!
         logits_next = self(next_obs, already_embedded, target=True).squeeze().detach()
 
         if self.reduction == 'add':

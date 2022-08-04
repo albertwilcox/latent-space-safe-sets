@@ -42,8 +42,8 @@ class ReplayBuffer:
         self._index = (self._index + 1) % self.size
         self._len = min(self._len + 1, self.size)
 
-    def sample(self, batch_size, ensemble=0):
-        if ensemble == 0:
+    def sample(self, batch_size, ensemble=0):#it is sampling a few transitions!
+        if ensemble == 0:#len(self) is literally self.size
             indices = np.random.randint(len(self), size=batch_size)
         elif ensemble > 0:
             indices = np.random.randint(len(self), size=(ensemble, batch_size))
@@ -71,7 +71,7 @@ class ReplayBuffer:
     def sample_negative(self, batch_size, key, ensemble=0):
         """
         Samples only from the entries where the array corresponding to key is zero
-        I added this method so I could sample only from data entries in the safe set
+        I added this method so I could sample only from data entries in the non safe set
         """
         assert len(self.data[key].shape) == 1, 'cannot sample positive from array with >1d values'
         zeros = (1 - self.data[key]).nonzero()[0]

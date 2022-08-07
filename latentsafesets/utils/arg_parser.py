@@ -21,7 +21,7 @@ def parse_args():
                         help='How frequently to save model checkpoints')
     parser.add_argument('--checkpoint_folder', type=str, default=None)
     parser.add_argument('--traj_per_update', default=10, type=int)
-    parser.add_argument('--num_updates', type=int, default=35)#25)#5)#20)#15)#10)#30)#the default is 25#
+    parser.add_argument('--num_updates', type=int, default=25)#35)#5)#20)#15)#10)#30)#the default is 25#
     parser.add_argument('--exper_name', type=str, default=None)
 
     add_controller_args(parser)
@@ -93,7 +93,8 @@ def add_ss_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--safe_set_ignore', action='store_true')
     parser.add_argument('--safe_set_update_iters', type=int, default=512)
-    parser.add_argument('--safe_set_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/ss.pth')#'outputs/2022-07-20/14-46-50/update_16/ss.pth')#None)#
+    parser.add_argument('--safe_set_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/ss.pth')#'outputs/2022-08-07/01-36-19/update_4/ss.pth')#'outputs/2022-08-07/01-09-48/update_5/ss.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/ss.pth')#'outputs/2022-07-15/17-41-16/initial_train/ss.pth')#'outputs/2022-07-20/14-46-50/update_16/ss.pth')#None)#
     # #'outputs/2022-07-15/17-41-16/initial_train/ss.pth')#None)#'outputs/2022-07-18/22-58-04/initial_train/ss.pth')#
     # #'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/ss.pth')#
 
@@ -116,7 +117,8 @@ def add_dyn_args(parser):
     parser.add_argument('--dyn_init_iters', type=int, default=10000,
                         help='Initial training iterations')
     parser.add_argument('--dyn_update_iters', type=int, default=512)
-    parser.add_argument('--dyn_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/dyn.pth')#'outputs/2022-07-20/14-46-50/update_16/dyn.pth')#
+    parser.add_argument('--dyn_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/dyn.pth')#'outputs/2022-08-07/01-36-19/update_4/dyn.pth')#'outputs/2022-08-07/01-09-48/update_5/dyn.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/dyn.pth')#'outputs/2022-07-15/17-41-16/initial_train/dyn.pth')#'outputs/2022-07-20/14-46-50/update_16/dyn.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/dyn.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/dyn.pth')#
 
 
@@ -139,7 +141,8 @@ def add_val_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--val_reduction', type=str, default='mean')
     parser.add_argument('--val_update_iters', type=int, default=2000)
-    parser.add_argument('--val_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/val.pth')#'outputs/2022-07-20/14-46-50/update_16/val.pth')#
+    parser.add_argument('--val_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/val.pth')#'outputs/2022-08-07/01-36-19/update_4/val.pth')#'outputs/2022-08-07/01-09-48/update_5/val.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/val.pth')#'outputs/2022-07-15/17-41-16/initial_train/val.pth')#'outputs/2022-07-20/14-46-50/update_16/val.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/val.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/val.pth')#
 
 
@@ -156,7 +159,8 @@ def add_constr_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--constr_ignore', action='store_true')
     parser.add_argument('--constr_update_iters', type=int, default=512)
-    parser.add_argument('--constr_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/constr.pth')#None)#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
+    parser.add_argument('--constr_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/constr.pth')#'outputs/2022-08-07/01-36-19/update_4/constr.pth')#'outputs/2022-08-07/01-09-48/update_5/constr.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/constr.pth')#'outputs/2022-07-15/17-41-16/initial_train/constr.pth')#None)#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
 
 
@@ -172,7 +176,8 @@ def add_gi_args(parser):
     parser.add_argument('--gi_init_iters', type=int, default=10000,
                         help='Initial training iterations')
     parser.add_argument('--gi_update_iters', type=int, default=512)
-    parser.add_argument('--gi_checkpoint', type=str, default='outputs/2022-07-15/17-41-16/initial_train/gi.pth')#'outputs/2022-07-20/14-46-50/update_16/gi.pth')#
+    parser.add_argument('--gi_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/gi.pth')#'outputs/2022-08-07/01-36-19/update_4/gi.pth')#'outputs/2022-08-07/01-09-48/update_5/gi.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/gi.pth')#'outputs/2022-07-15/17-41-16/initial_train/gi.pth')#'outputs/2022-07-20/14-46-50/update_16/gi.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/gi.pth')#None)#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/gi.pth')#
 
 def add_cbfd_args(parser):
@@ -190,7 +195,8 @@ def add_cbfd_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--cbfd_ignore', action='store_true')
     parser.add_argument('--cbfd_update_iters', type=int, default=512)
-    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-06/15-02-09/cbfd_180000.pth')#None)#'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/12-29-56/cbfd.pth')#
+    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-07/01-56-19/update_3/cbfd.pth')#'outputs/2022-08-07/01-36-19/update_4/cbfd.pth')#'outputs/2022-08-07/01-09-48/update_5/cbfd.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/cbfd.pth')#'outputs/2022-08-06/15-02-09/cbfd_180000.pth')#None)#'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/12-29-56/cbfd.pth')#
     #'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/10-21-50/cbfd.pth')#'outputs/2022-08-03/01-06-16/cbfd.pth')#
     #'outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#

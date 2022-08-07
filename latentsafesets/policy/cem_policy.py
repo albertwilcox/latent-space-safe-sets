@@ -273,17 +273,21 @@ class CEMSafeSetPolicy(Policy):
                 #se1=stateevolve
 
                 walls=[((75,55),(100,95))]#
+                #I devide the map into 8 regions clockwise: left up, middle up, right up, right middle, right down, middle down, left down, left middle
                 rd1h = torch.where((se[:, :, 0]<=walls[0][0][0])*(se[:, :, 1]<=walls[0][0][1]), se[:, :, 0]-walls[0][0][0], se[:, :, 0])
+                #Thus, rd1h means relative distance region 1 horizontal, where region 1 means left up of the centeral obstacle
                 rd1v = torch.where((se[:, :, 0] <= walls[0][0][0]) * (se[:, :, 1] <= walls[0][0][1]),se[:, :, 1] - walls[0][0][1], se[:, :, 1])
+                #and consequently, rd1v means relative distance region 1 vertical, which gets the relative distance in the vertical directions
                 rd1=torch.concat((rd1h.reshape(rd1h.shape[0],rd1h.shape[1],1),rd1v.reshape(rd1v.shape[0],rd1v.shape[1],1)),dim=2)
+                #we concatenate them to recover the 2-dimensional coordinates
                 rd2h = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][1][0]) * (rd1[:, :, 1] <= walls[0][0][1]),
-                                   0*rd1[:, :, 0] , rd1[:, :, 0])
+                                   0*rd1[:, :, 0] , rd1[:, :, 0])#region 2 is the middle up of the centeral obstacle
                 rd2v = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][1][0]) * (rd1[:, :, 1] <= walls[0][0][1]),
                                    rd1[:, :, 1] - walls[0][0][1], rd1[:, :, 1])
                 rd2 = torch.concat(
                     (rd2h.reshape(rd2h.shape[0], rd2h.shape[1], 1), rd2v.reshape(rd2v.shape[0], rd2v.shape[1], 1)),
                     dim=2)
-                rd3condition=(rd2[:, :, 0]>walls[0][1][0])*(rd2[:, :, 1]<=walls[0][0][1])
+                rd3condition=(rd2[:, :, 0]>walls[0][1][0])*(rd2[:, :, 1]<=walls[0][0][1])#this condition is to see if it is in region 3
                 rd3h=torch.where(rd3condition,rd2[:, :, 0]-walls[0][1][0], rd2[:, :, 0])#h means horizontal
                 rd3v = torch.where(rd3condition, rd2[:, :, 1] - walls[0][0][1], rd2[:, :, 1])#v means vertical
                 rd3 = torch.concat(
@@ -321,50 +325,50 @@ class CEMSafeSetPolicy(Policy):
                     dim=2)#dim: (1000,5,2)
                 rdn=torch.norm(rd8,dim=2)#rdn for relative distance norm
                 #print(rdn.shape)#torch.Size([1000, 5])
-                cbf=rdn**2-15**2#13**2#20:30#don't forget the square
+                cbf=rdn**2-15**2#13**2#20:30#don't forget the square!# Note that this is also used in the online training afterwards
                 acbf=-cbf*act_ss_thresh#acbf means alpha cbf, the minus class k function#0.8 will be replaced later#don't forget the negative sign!
-                asrv1=action_samples[:,:,0]#as rv means action sample reversed
-                asrv2=-action_samples[:,:,1]#action_samples[:,:,1]#
+                asrv1=action_samples[:,:,0]#asrv1 means action sample reversed in the 1st dimension (horizontal dimension)!
+                asrv2=-action_samples[:,:,1]#action_samples[:,:,1]#asrv2 means action sample reversed in the 2st dimension (vertical dimension)!
                 asrv = torch.concat((asrv1.reshape(asrv1.shape[0], asrv1.shape[1], 1), asrv2.reshape(asrv2.shape[0], asrv2.shape[1], 1)),dim=2)  # dim: (1000,5,2)
-                rda=torch.concat((rd8,asrv),dim=2)#check if it is correct!#rda: relative distance+action
+                rda=torch.concat((rd8,asrv),dim=2)#check if it is correct!#rda: relative distance+action will be thrown later into the cbf dot network
 
 
                 # Blow up cost for trajectories that are not constraint satisfying and/or don't end up
                 #   in the safe set
                 if not self.ignore_constraints:#Do I add the CBF term here?#to see the constraint condition of 1000 trajs
-                    constraints_all = torch.sigmoid(self.constraint_function(predictions, already_embedded=True))#each in the model
-                    constraint_viols = torch.sum(torch.max(constraints_all, dim=0)[0] >= self.constraint_thresh, dim=1)#those that violate the constraints
-                else:#if constraint_viols>=1, then it is game over!
+                    constraints_all = torch.sigmoid(self.constraint_function(predictions, already_embedded=True))#all the candidates#each in the model
+                    constraint_viols = torch.sum(torch.max(constraints_all, dim=0)[0] >= self.constraint_thresh, dim=1)#those that violate the constraints#if constraint_viols>=1, then game over!
+                else:#ignore the constraints
                     constraint_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)#no constraint violators!
 
                 #self.ignore_cbfdots=True#just for 10:57 at Aug 4th
                 if not self.ignore_cbfdots:#Do I add the CBF term here?#to see the constraint condition of 1000 trajs
-                    cbfdots_all = self.cbfdot_function(rda, already_embedded=True)#torch.sigmoid()#each in the model#(20,1000,5)
+                    cbfdots_all = self.cbfdot_function(rda, already_embedded=True)#all the candidates#torch.sigmoid()#each in the model#(20,1000,5)
                     #print(cbfdots_all.shape)#torch.Size([1000, 5, 1])#
                     cbfdots_all=cbfdots_all.reshape(cbfdots_all.shape[0],cbfdots_all.shape[1])#
                     #print('cbfdots_all', cbfdots_all)
                     cbfdots_viols = torch.sum(cbfdots_all<acbf, dim=1)#those that violate the constraints#1000 0,1,2,3,4,5s#
                     #print('acbf',acbf)#bigger than or equal to is the right thing to do! The violations are <!
                     #print('cbfdots_viols',cbfdots_viols)
-                    cbfdots_viols=cbfdots_viols.reshape(cbfdots_viols.shape[0],1)
+                    cbfdots_viols=cbfdots_viols.reshape(cbfdots_viols.shape[0],1)#the threshold now should be predictions dependent
                     #print('cbfdots_viols.shape',cbfdots_viols.shape)
                     #print('cbfdots_viols',cbfdots_viols)
                     #print(cbfdots.shape)
-                else:#the threshold now should be predictions dependent
+                else:#if ignoring the cbf dot constraints
                     cbfdots_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)#no constraint violators!
-                self.ignore_safe_set=True#Just for 18:47 Aug 4th as well as 15:14 Aug 5th
+                self.ignore_safe_set=True#Including 18:47 Aug 4th as well as 15:14 Aug 5th
                 if not self.ignore_safe_set:
-                    safe_set_all = self.safe_set.safe_set_probability(last_states, already_embedded=True)#get the prediction
-                    safe_set_viols = torch.mean(safe_set_all#not max this time
+                    safe_set_all = self.safe_set.safe_set_probability(last_states, already_embedded=True)#get the prediction for the safety of the last state
+                    safe_set_viols = torch.mean(safe_set_all#not max this time, but the mean of the 20 candidates
                                                 .reshape((num_models, num_candidates, 1)),#(20,1000,1)
                                                 dim=0) < act_ss_thresh#(1000,1)
-                else:
+                else:#ignore safe set constraints
                     safe_set_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)
-                goal_preds = self.goal_indicator(predictions, already_embedded=True)#Do I add the CBF term here?(20,1000,5)
-                goal_states = torch.sum(torch.mean(goal_preds, dim=0) > self.goal_thresh, dim=1)#f_G in the paper(1000,1)
+                goal_preds = self.goal_indicator(predictions, already_embedded=True)#the prob of being goal at those states#Do I add the CBF term here?(20,1000,5)
+                goal_states = torch.sum(torch.mean(goal_preds, dim=0) > self.goal_thresh, dim=1)#sum over planning horizon#f_G in the paper(1000,1)
                 #maybe the self.goal_thresh is a bug source?
                 values = values + (constraint_viols +cbfdots_viols+ safe_set_viols) * -1e5 + goal_states#equation 2 in paper!
-                values = values.squeeze()
+                values = values.squeeze()#all those violators, assign them with big cost of -1e5
 
             itr += 1#CEM Evolution method
 

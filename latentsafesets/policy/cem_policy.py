@@ -34,7 +34,7 @@ class CEMSafeSetPolicy(Policy):
 
         self.env = env
         self.encoder = encoder
-        self.safe_set = safe_set
+        self.safe_set = safe_set#safe set estimator
         self.dynamics_model = dynamics_model
         self.value_function = value_function
         self.constraint_function = constraint_function
@@ -56,7 +56,7 @@ class CEMSafeSetPolicy(Policy):
         self.safe_set_thresh_mult_iters = params['safe_set_thresh_mult_iters']#5
         self.constraint_thresh = params['constr_thresh']#0.2
         self.goal_thresh = params['gi_thresh']#0.5
-        self.ignore_safe_set = params['safe_set_ignore']#False, for ablation study!
+        self.ignore_safe_set = params['safe_set_ignore']#False, for ablation study!#changed to true after using cbf dot
         self.ignore_constraints = params['constr_ignore']#false
         self.ignore_cbfdots = params['cbfd_ignore']  # false
 
@@ -67,7 +67,7 @@ class CEMSafeSetPolicy(Policy):
         self.init_var = np.tile(np.square(self.ac_ub - self.ac_lb) / 16, [self.plan_hor])
 
     @torch.no_grad()
-    def act(self, obs):
+    def act(self, obs):#if using cbf, see the function actcbfd later on
         """
         Returns the action that this controller would take at time t given observation obs.
 
@@ -100,21 +100,21 @@ class CEMSafeSetPolicy(Policy):
                 num_constraint_satisfying = sum(values > -1e5)#no any constraints violation
                 iter_num_elites = min(num_constraint_satisfying, self.num_elites)#max(2,min(num_constraint_satisfying, self.num_elites))#what about doing max(2) to it?
                 #what if I change this into num_constraint_satisfying+2?
-                if num_constraint_satisfying == 0:#it is definitely a bug not to include the case where ncs=1!
+                if num_constraint_satisfying == 0:#it is definitely a bug not to include the case where num_constraint_satisfying=1!
                     reset_count += 1
                     act_ss_thresh *= self.safe_set_thresh_mult#*0.8 by default
                     if reset_count > self.safe_set_thresh_mult_iters:
                         self.mean = None
                         return self.env.action_space.sample()#really random action!
 
-                    itr = 0#that is why it always stops at iteration 0 when error occurs!
+                    itr = 0#let's start over with itr=0 in this case!#that is why it always stops at iteration 0 when error occurs!
                     self.mean, self.std = None, None
                     continue
 
                 # Sort
                 sortid = values.argsort()#if it goes to this step, the num_constraint_satisfying should >=1
                 actions_sorted = action_samples[sortid]
-                elites = actions_sorted[-iter_num_elites:]
+                elites = actions_sorted[-iter_num_elites:]#get those elite trajectories
                 #print('elites.shape',elites.shape)#once it is torch.Size([1, 5, 2]), it's gone!
                 #print('elites',elites)
 
@@ -123,7 +123,7 @@ class CEMSafeSetPolicy(Policy):
                 # print('self.mean',self.mean,'self.std',self.std)#it's self.std that got nan!
                 #print(self.std[0,0])
                 #import ipdb#it seems that they are lucky to run into the following case
-                if torch.isnan(self.std[0,0]):#self.std[0,0]==torch.nan:
+                if torch.isnan(self.std[0,0]):#self.std[0,0]==torch.nan:#this means that there is only one trajectory
                     #ipdb.set_trace()
                     print('elites.shape',elites.shape)#
                     #print('nan',self.std[0,0])
@@ -246,7 +246,7 @@ class CEMSafeSetPolicy(Policy):
                     #print('nan',self.std[0,0])
                     #self.std=0.5*torch.rand_like(self.mean)+0.1#1e-2#is it just a work around?
                     self.std = 0.8 * torch.ones_like(self.mean)#0.0 * torch.ones_like(self.mean)##1.0 * torch.ones_like(self.mean)# 1e-2#is it just a work around?
-
+                    #0.8 is the hyperparameter I choose which I think may have good performance
                 action_samples = self._sample_actions_normal(self.mean, self.std)#(1000,5,2)
                 #print('action_samples', action_samples)#it becomes nan!
 
@@ -258,8 +258,8 @@ class CEMSafeSetPolicy(Policy):
                 num_models, num_candidates, planning_hor, d_latent = predictions.shape#the possible H sequence of all candidates' all trials
 
                 last_states = predictions[:, :, -1, :].reshape(
-                    (num_models * num_candidates, d_latent))#the 20000*32 comes out!
-                all_values = self.value_function.get_value(last_states, already_embedded=True)
+                    (num_models * num_candidates, d_latent))#the last state under the action sequence#the 20000*32 comes out!
+                all_values = self.value_function.get_value(last_states, already_embedded=True)#all values from 1000 candidates*20 particles
                 nans = torch.isnan(all_values)
                 all_values[nans] = -1e5
                 values = torch.mean(all_values.reshape((num_models, num_candidates, 1)), dim=0)#reduce to (1000,1), take the mean of 20
@@ -269,7 +269,7 @@ class CEMSafeSetPolicy(Policy):
                 storch=ptu.torchify(state)#state torch
                 #print(action_samples.shape)#torch.Size([1000, 5, 2])
                 #print(action_samples.dtype)#torch.float32
-                se=storch+action_samples#shape(1000,5,2)
+                se=storch+action_samples#se means state estimated#shape(1000,5,2)
                 #se1=stateevolve
 
                 walls=[((75,55),(100,95))]#
@@ -328,7 +328,7 @@ class CEMSafeSetPolicy(Policy):
                 cbf=rdn**2-15**2#13**2#20:30#don't forget the square!# Note that this is also used in the online training afterwards
                 acbf=-cbf*act_ss_thresh#acbf means alpha cbf, the minus class k function#0.8 will be replaced later#don't forget the negative sign!
                 asrv1=action_samples[:,:,0]#asrv1 means action sample reversed in the 1st dimension (horizontal dimension)!
-                asrv2=-action_samples[:,:,1]#action_samples[:,:,1]#asrv2 means action sample reversed in the 2st dimension (vertical dimension)!
+                asrv2=action_samples[:,:,1]#-action_samples[:,:,1]#asrv2 means action sample reversed in the 2st dimension (vertical dimension)!
                 asrv = torch.concat((asrv1.reshape(asrv1.shape[0], asrv1.shape[1], 1), asrv2.reshape(asrv2.shape[0], asrv2.shape[1], 1)),dim=2)  # dim: (1000,5,2)
                 rda=torch.concat((rd8,asrv),dim=2)#check if it is correct!#rda: relative distance+action will be thrown later into the cbf dot network
 
@@ -388,7 +388,7 @@ class CEMSafeSetPolicy(Policy):
         action_samples = scaled + self.ac_lb#something random between ac_lb and ac_ub
         return action_samples.to(ptu.TORCH_DEVICE)#size of (1000,5,2)
 
-    def _sample_actions_normal(self, mean, std, n=None):
+    def _sample_actions_normal(self, mean, std, n=None):#sample from a normal distribution with mean=mean and std=std
         if n is None:
             n = self.popsize
 

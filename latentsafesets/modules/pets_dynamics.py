@@ -173,6 +173,10 @@ class ProbabilisticDynamicsModel(nn.Module):
         concat = torch.cat((inp, acs), dim=1)
         delta_normalized_both = self.delta_network(concat)
         delta_normalized_mean = delta_normalized_both[:, :self.d_latent]
+        #print('delta_normalized_mean',delta_normalized_both)
+        nans = torch.isnan(delta_normalized_mean)
+        #print(nans)#
+        delta_normalized_mean[nans] = 0
         delta_normalized_logstd = delta_normalized_both[:, self.d_latent:]#pay close attention to the line below
         delta_normalized_std = torch.exp(delta_normalized_logstd)+1e-6##torch.exp(delta_normalized_logstd)
         #delta_normalized_std=torch.where(delta_normalized_std<1e-6,1e-6,delta_normalized_std)#why not working?

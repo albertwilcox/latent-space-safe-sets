@@ -21,7 +21,7 @@ def parse_args():
                         help='How frequently to save model checkpoints')
     parser.add_argument('--checkpoint_folder', type=str, default=None)
     parser.add_argument('--traj_per_update', default=10, type=int)
-    parser.add_argument('--num_updates', type=int, default=10)#15)#25)#30)#35)#20)#the default is 25#
+    parser.add_argument('--num_updates', type=int, default=35)#25)#5)#20)#15)#10)#30)#the default is 25#
     parser.add_argument('--exper_name', type=str, default=None)
 
     add_controller_args(parser)
@@ -177,8 +177,8 @@ def add_gi_args(parser):
 
 def add_cbfd_args(parser):
     # Constraint Estimator params
-    parser.add_argument('--cbfdot_thresh', type=float, default=0.8)
-    parser.add_argument('--cbfdot_thresh_mult', type=float, default=0.8)
+    parser.add_argument('--cbfdot_thresh', type=float, default=3.2)#0.8)#
+    parser.add_argument('--cbfdot_thresh_mult', type=float, default=1.25)#0.8)#
     parser.add_argument('--cbfd_lr', type=float, default=1e-4,
                         help='Learning rate for cbfd network')
     parser.add_argument('--cbfd_hidden_size', type=int, default=200)
@@ -186,11 +186,12 @@ def add_cbfd_args(parser):
     parser.add_argument('--cbfd_batch_size', type=int, default=256)
     parser.add_argument('--cbfd_thresh', type=float, default=0.2,
                         help='Threshold for an obs to be considered in violation of cbf dots')
-    parser.add_argument('--cbfd_init_iters', type=int, default=20000,#30000,#10000,#
+    parser.add_argument('--cbfd_init_iters', type=int, default=320000,#160000,#80000,#40000,#20000,#30000,#10000,#
                         help='Initial training iterations')
     parser.add_argument('--cbfd_ignore', action='store_true')
     parser.add_argument('--cbfd_update_iters', type=int, default=512)
-    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-03/01-06-16/cbfd.pth')#None)#
+    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-06/15-02-09/cbfd_180000.pth')#None)#'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/12-29-56/cbfd.pth')#
+    #'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/10-21-50/cbfd.pth')#'outputs/2022-08-03/01-06-16/cbfd.pth')#
     #'outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#
 

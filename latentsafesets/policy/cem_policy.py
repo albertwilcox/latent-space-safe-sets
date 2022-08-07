@@ -276,9 +276,9 @@ class CEMSafeSetPolicy(Policy):
                 rd1h = torch.where((se[:, :, 0]<=walls[0][0][0])*(se[:, :, 1]<=walls[0][0][1]), se[:, :, 0]-walls[0][0][0], se[:, :, 0])
                 rd1v = torch.where((se[:, :, 0] <= walls[0][0][0]) * (se[:, :, 1] <= walls[0][0][1]),se[:, :, 1] - walls[0][0][1], se[:, :, 1])
                 rd1=torch.concat((rd1h.reshape(rd1h.shape[0],rd1h.shape[1],1),rd1v.reshape(rd1v.shape[0],rd1v.shape[1],1)),dim=2)
-                rd2h = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][0][1]) * (rd1[:, :, 1] <= walls[0][0][1]),
+                rd2h = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][1][0]) * (rd1[:, :, 1] <= walls[0][0][1]),
                                    0*rd1[:, :, 0] , rd1[:, :, 0])
-                rd2v = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][0][1]) * (rd1[:, :, 1] <= walls[0][0][1]),
+                rd2v = torch.where((rd1[:, :, 0] > walls[0][0][0])*(rd1[:, :, 0] <= walls[0][1][0]) * (rd1[:, :, 1] <= walls[0][0][1]),
                                    rd1[:, :, 1] - walls[0][0][1], rd1[:, :, 1])
                 rd2 = torch.concat(
                     (rd2h.reshape(rd2h.shape[0], rd2h.shape[1], 1), rd2v.reshape(rd2v.shape[0], rd2v.shape[1], 1)),
@@ -307,13 +307,13 @@ class CEMSafeSetPolicy(Policy):
                 rd6 = torch.concat(
                     (rd6h.reshape(rd6h.shape[0], rd6h.shape[1], 1), rd6v.reshape(rd6v.shape[0], rd6v.shape[1], 1)),
                     dim=2)
-                rd7condition = (rd6[:, :, 0] <= walls[0][1][0]) * (rd6[:, :, 1] > walls[0][1][1])
+                rd7condition = (rd6[:, :, 0] <= walls[0][0][0]) * (rd6[:, :, 1] > walls[0][1][1])
                 rd7h = torch.where(rd7condition, rd6[:, :, 0]- walls[0][0][0], rd6[:, :, 0])  # h means horizontal
                 rd7v = torch.where(rd7condition, rd6[:, :, 1] - walls[0][1][1], rd6[:, :, 1])  # v means vertical
                 rd7 = torch.concat(
                     (rd7h.reshape(rd7h.shape[0], rd7h.shape[1], 1), rd7v.reshape(rd7v.shape[0], rd7v.shape[1], 1)),
                     dim=2)
-                rd8condition = (rd7[:, :, 0] <= walls[0][1][0]) *(rd7[:, :, 1] <= walls[0][1][1])* (rd7[:, :, 1] > walls[0][0][1])
+                rd8condition = (rd7[:, :, 0] <= walls[0][0][0]) *(rd7[:, :, 1] <= walls[0][1][1])* (rd7[:, :, 1] > walls[0][0][1])
                 rd8h = torch.where(rd8condition, rd7[:, :, 0] - walls[0][0][0], rd7[:, :, 0])  # h means horizontal
                 rd8v = torch.where(rd8condition, 0*rd7[:, :, 1], rd7[:, :, 1])  # v means vertical
                 rd8 = torch.concat(
@@ -321,16 +321,19 @@ class CEMSafeSetPolicy(Policy):
                     dim=2)#dim: (1000,5,2)
                 rdn=torch.norm(rd8,dim=2)#rdn for relative distance norm
                 #print(rdn.shape)#torch.Size([1000, 5])
-                cbf=rdn**2-15**2#don't forget the square
-                acbf=-cbf*act_ss_thresh#0.8 will be replaced later#don't forget the negative sign!
-                rda=torch.concat((rd8,action_samples),dim=2)#check if it is correct!#rda: relative distance+action
+                cbf=rdn**2-15**2#13**2#20:30#don't forget the square
+                acbf=-cbf*act_ss_thresh#acbf means alpha cbf, the minus class k function#0.8 will be replaced later#don't forget the negative sign!
+                asrv1=action_samples[:,:,0]#as rv means action sample reversed
+                asrv2=-action_samples[:,:,1]#action_samples[:,:,1]#
+                asrv = torch.concat((asrv1.reshape(asrv1.shape[0], asrv1.shape[1], 1), asrv2.reshape(asrv2.shape[0], asrv2.shape[1], 1)),dim=2)  # dim: (1000,5,2)
+                rda=torch.concat((rd8,asrv),dim=2)#check if it is correct!#rda: relative distance+action
 
 
                 # Blow up cost for trajectories that are not constraint satisfying and/or don't end up
                 #   in the safe set
                 if not self.ignore_constraints:#Do I add the CBF term here?#to see the constraint condition of 1000 trajs
                     constraints_all = torch.sigmoid(self.constraint_function(predictions, already_embedded=True))#each in the model
-                    constraint_viols = torch.sum(torch.max(constraints_all, dim=0)[0] > self.constraint_thresh, dim=1)#those that violate the constraints
+                    constraint_viols = torch.sum(torch.max(constraints_all, dim=0)[0] >= self.constraint_thresh, dim=1)#those that violate the constraints
                 else:#if constraint_viols>=1, then it is game over!
                     constraint_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)#no constraint violators!
 
@@ -339,14 +342,17 @@ class CEMSafeSetPolicy(Policy):
                     cbfdots_all = self.cbfdot_function(rda, already_embedded=True)#torch.sigmoid()#each in the model#(20,1000,5)
                     #print(cbfdots_all.shape)#torch.Size([1000, 5, 1])#
                     cbfdots_all=cbfdots_all.reshape(cbfdots_all.shape[0],cbfdots_all.shape[1])#
-                    cbfdots_viols = torch.sum(cbfdots_all> acbf, dim=1)#those that violate the constraints#1000 0,1,2,3,4,5s#
+                    #print('cbfdots_all', cbfdots_all)
+                    cbfdots_viols = torch.sum(cbfdots_all<acbf, dim=1)#those that violate the constraints#1000 0,1,2,3,4,5s#
+                    #print('acbf',acbf)#bigger than or equal to is the right thing to do! The violations are <!
+                    #print('cbfdots_viols',cbfdots_viols)
                     cbfdots_viols=cbfdots_viols.reshape(cbfdots_viols.shape[0],1)
                     #print('cbfdots_viols.shape',cbfdots_viols.shape)
                     #print('cbfdots_viols',cbfdots_viols)
                     #print(cbfdots.shape)
                 else:#the threshold now should be predictions dependent
                     cbfdots_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)#no constraint violators!
-
+                self.ignore_safe_set=True#Just for 18:47 Aug 4th as well as 15:14 Aug 5th
                 if not self.ignore_safe_set:
                     safe_set_all = self.safe_set.safe_set_probability(last_states, already_embedded=True)#get the prediction
                     safe_set_viols = torch.mean(safe_set_all#not max this time

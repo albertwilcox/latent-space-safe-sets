@@ -29,7 +29,7 @@ if __name__ == '__main__':
     env = utils.make_env(params)
 
     modules = utils.make_modulessafety(params, cbfd=True)
-    encoder = modules['enc']
+    encoder = modules['enc']#not used if only using states, will be used if using latent states
     cbfdot = modules['cbfd']#CBFdotEstimator(encoder,params)#
 
     replay_buffer = utils.load_replay_buffer(params, encoder)

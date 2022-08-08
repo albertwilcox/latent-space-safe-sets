@@ -61,7 +61,7 @@ class SimplePointBot(Env, utils.EzPickle):
         self._from_pixels = from_pixels
         self._image_cache = {}#it is a dictionary
 
-    def step(self, a):#it returns
+    def step(self, a):#it returns#if using cbf dot estimator, then see the sepsafety function below
         a = self._process_action(a)#line 166, an action satisfying the constraint
         old_state = self.state.copy()#2d state
         next_state = self._next_state(self.state, a)#122, go to the next 2d state with noise
@@ -97,33 +97,34 @@ class SimplePointBot(Env, utils.EzPickle):
             obs = self._state_to_image(self.state)#line 169#it is a 3-channel image
         else:
             obs = self.state#it is a 2-d state
-
-        if (old_state<=self.wall_coords[0][0]).all():#old_state#check it!
-            reldistold=old_state-self.wall_coords[0][0]#np.linalg.norm()
+        #find the nearest distance to the obstacle according to different regions
+        #I set 8 regions versue the central obstacle: upper left, upper middle, upper right, right middle, lower right, lower middle, lower left, left middle
+        if (old_state<=self.wall_coords[0][0]).all():#left upper#old_state#check it!
+            reldistold=old_state-self.wall_coords[0][0]#relative distance old#np.linalg.norm()
         elif self.wall_coords[0][0][0]<=old_state[0]<=self.wall_coords[0][1][0] and old_state[1]<=self.wall_coords[0][0][1]:
-            reldistold = np.array([0,old_state[1] - self.wall_coords[0][0][1]])
+            reldistold = np.array([0,old_state[1] - self.wall_coords[0][0][1]])#middle up
         elif old_state[0]>=self.wall_coords[0][1][0] and old_state[1]<=self.wall_coords[0][0][1]:
-            reldistold = old_state - (self.wall_coords[0][1][0],self.wall_coords[0][0][1])
+            reldistold = old_state - (self.wall_coords[0][1][0],self.wall_coords[0][0][1])#upper right
         elif old_state[0]>=self.wall_coords[0][1][0] and self.wall_coords[0][0][1]<=old_state[1]<=self.wall_coords[0][1][1]:
-            reldistold = np.array([old_state[0] - self.wall_coords[0][1][0],0])
-        elif (old_state>=self.wall_coords[0][1]).all():#old_state
+            reldistold = np.array([old_state[0] - self.wall_coords[0][1][0],0])#right middle
+        elif (old_state>=self.wall_coords[0][1]).all():#old_state#lower right
             reldistold = old_state - self.wall_coords[0][1]
         elif self.wall_coords[0][0][0]<=old_state[0]<=self.wall_coords[0][1][0] and old_state[1]>=self.wall_coords[0][1][1]:
-            reldistold = np.array([0,old_state[1] - self.wall_coords[0][1][1]])
+            reldistold = np.array([0,old_state[1] - self.wall_coords[0][1][1]])#middle down/lower middle
         elif old_state[0]<=self.wall_coords[0][0][0] and old_state[1]>=self.wall_coords[0][1][1]:
-            reldistold = (old_state - (self.wall_coords[0][0][0],self.wall_coords[0][1][1]))
+            reldistold = (old_state - (self.wall_coords[0][0][0],self.wall_coords[0][1][1]))#lower left
         elif old_state[0]<=self.wall_coords[0][0][0] and self.wall_coords[0][0][1]<=old_state[1]<=self.wall_coords[0][1][1]:
-            reldistold = np.array([old_state[0] - self.wall_coords[0][0][0],0])
+            reldistold = np.array([old_state[0] - self.wall_coords[0][0][0],0])#middle left
         else:
             #print(old_state)#it can be [98.01472841 92.11425524]
             reldistold=np.array([0,0])#9.9#
-        hvalueold = np.linalg.norm(reldistold) ** 2 - 15 ** 2
+        hvalueold = np.linalg.norm(reldistold) ** 2 - 15 ** 2#get the value of the h function
         if self._from_pixels:
             obs = self._state_to_image(self.state)#line 169#it is a 3-channel image
         else:
             obs = self.state#it is a 2-d state
         if (next_state <= self.wall_coords[0][0]).all():  # old_state#check it!
-            reldistnew = next_state - self.wall_coords[0][0]  # np.linalg.norm()
+            reldistnew = next_state - self.wall_coords[0][0]#relative distance new # np.linalg.norm()
         elif self.wall_coords[0][0][0] <= next_state[0] <= self.wall_coords[0][1][0] and next_state[1] <= \
                 self.wall_coords[0][0][1]:
             reldistnew = np.array([0, next_state[1] - self.wall_coords[0][0][1]])
@@ -146,18 +147,18 @@ class SimplePointBot(Env, utils.EzPickle):
             # print(old_state)#it can be [98.01472841 92.11425524]
             reldistnew = np.array([0, 0])  # 9.9#
         hvaluenew = np.linalg.norm(reldistnew) ** 2 - 15 ** 2
-        hvd=hvaluenew-hvalueold
+        hvd=hvaluenew-hvalueold#hvd for h value difference
         return obs, cur_reward, self.done, {
             "constraint": constr,#it is also a dictionary!
             "reward": cur_reward,
             "state": old_state,
             "next_state": next_state,
             "action": a,#the current action!
-            "rdo":reldistold,#array now!
-            "rdn": reldistnew,#array now!
-            "hvo": hvalueold,
-            "hvn":hvaluenew,
-            "hvd":hvd
+            "rdo":reldistold,#rdo for relative distance old#array now!
+            "rdn": reldistnew,#rdn for relative distance new#array now!
+            "hvo": hvalueold,#hvo for h value old
+            "hvn":hvaluenew,#hvn for h value new
+            "hvd":hvd#hvd for h value difference
 
         }
 

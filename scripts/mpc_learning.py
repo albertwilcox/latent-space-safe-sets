@@ -109,11 +109,11 @@ if __name__ == '__main__':
                               'next_obs': next_obs, 'done': done,  # this is a dictionary
                               'constraint': constr, 'safe_set': 0,
                               'on_policy': 1,
-                              'rdo': info['rdo'].tolist(),
-                              'rdn': info['rdn'].tolist(),
-                              'hvo': info['hvo'],
-                              'hvn': info['hvn'],
-                              'hvd': info['hvd'],
+                              'rdo': info['rdo'].tolist(),#rdo for relative distance old
+                              'rdn': info['rdn'].tolist(),#rdn for relative distance new
+                              'hvo': info['hvo'],#hvo for h value old
+                              'hvn': info['hvn'],#hvn for h value new
+                              'hvd': info['hvd'],#hvd for h value difference
                               'state': info['state'].tolist(),
                               'next_state': info['next_state'].tolist()
                               }  # add key and value into it!

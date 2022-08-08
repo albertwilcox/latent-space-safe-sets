@@ -245,7 +245,7 @@ class CEMSafeSetPolicy(Policy):
                     print('elites.shape',elites.shape)#
                     #print('nan',self.std[0,0])
                     #self.std=0.5*torch.rand_like(self.mean)+0.1#1e-2#is it just a work around?
-                    self.std = 0.8 * torch.ones_like(self.mean)#0.0 * torch.ones_like(self.mean)##1.0 * torch.ones_like(self.mean)# 1e-2#is it just a work around?
+                    self.std = 0.0 * torch.ones_like(self.mean)#0.8 * torch.ones_like(self.mean)##1.0 * torch.ones_like(self.mean)# 1e-2#is it just a work around?
                     #0.8 is the hyperparameter I choose which I think may have good performance
                 action_samples = self._sample_actions_normal(self.mean, self.std)#(1000,5,2)
                 #print('action_samples', action_samples)#it becomes nan!
@@ -328,7 +328,7 @@ class CEMSafeSetPolicy(Policy):
                 cbf=rdn**2-15**2#13**2#20:30#don't forget the square!# Note that this is also used in the online training afterwards
                 acbf=-cbf*act_ss_thresh#acbf means alpha cbf, the minus class k function#0.8 will be replaced later#don't forget the negative sign!
                 asrv1=action_samples[:,:,0]#asrv1 means action sample reversed in the 1st dimension (horizontal dimension)!
-                asrv2=action_samples[:,:,1]#-action_samples[:,:,1]#asrv2 means action sample reversed in the 2st dimension (vertical dimension)!
+                asrv2=-action_samples[:,:,1]#action_samples[:,:,1]#asrv2 means action sample reversed in the 2st dimension (vertical dimension)!
                 asrv = torch.concat((asrv1.reshape(asrv1.shape[0], asrv1.shape[1], 1), asrv2.reshape(asrv2.shape[0], asrv2.shape[1], 1)),dim=2)  # dim: (1000,5,2)
                 rda=torch.concat((rd8,asrv),dim=2)#check if it is correct!#rda: relative distance+action will be thrown later into the cbf dot network
 

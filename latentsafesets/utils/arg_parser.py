@@ -70,7 +70,7 @@ def add_encoder_args(parser):
                         help='How many states to sample for each embedding update')
     parser.add_argument('--enc_init_iters', type=int, default=100000,
                         help='Initial training iterations')
-    parser.add_argument('--enc_checkpoint', type=str, default='/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-13/17-24-59/vae.pth',
+    parser.add_argument('--enc_checkpoint', type=str, default='outputs/2022-07-13/17-24-59/vae.pth',#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-13/17-24-59/vae.pth',
                         #'outputs/2022-07-18/19-38-58/vae.pth',#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-13/17-24-59/vae.pth',#
                         help='File to load a CEM model from')#None,
     parser.add_argument('--enc_data_aug', action='store_true')

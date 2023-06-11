@@ -21,7 +21,7 @@ def parse_args():
                         help='How frequently to save model checkpoints')
     parser.add_argument('--checkpoint_folder', type=str, default=None)
     parser.add_argument('--traj_per_update', default=10, type=int)
-    parser.add_argument('--num_updates', type=int, default=45)#40)#35)#25)#5)#20)#15)#10)#30)#the default is 25#
+    parser.add_argument('--num_updates', type=int, default=25)#45)#40)#35)#5)#20)#15)#10)#30)#the default is 25#
     parser.add_argument('--exper_name', type=str, default=None)
 
     add_controller_args(parser)
@@ -195,8 +195,8 @@ def add_cbfd_args(parser):
                         help='Initial training iterations')
     parser.add_argument('--cbfd_ignore', action='store_true')
     parser.add_argument('--cbfd_update_iters', type=int, default=512)
-    parser.add_argument('--cbfd_checkpoint', type=str, default='outputs/2022-08-06/15-02-09/cbfd_180000.pth')#'outputs/2022-08-07/01-56-19/update_3/cbfd.pth')#'outputs/2022-08-07/01-36-19/update_4/cbfd.pth')#'outputs/2022-08-07/01-09-48/update_5/cbfd.pth')#
-    # 'outputs/2022-08-06/22-42-02/update_13/cbfd.pth')#None)#'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/12-29-56/cbfd.pth')#
+    parser.add_argument('--cbfd_checkpoint', type=str, default=None)#'outputs/2022-08-06/15-02-09/cbfd_180000.pth')#'outputs/2022-08-07/01-56-19/update_3/cbfd.pth')#'outputs/2022-08-07/01-36-19/update_4/cbfd.pth')#'outputs/2022-08-07/01-09-48/update_5/cbfd.pth')#
+    # 'outputs/2022-08-06/22-42-02/update_13/cbfd.pth')#'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/12-29-56/cbfd.pth')#
     #'outputs/2022-08-06/11-44-04/cbfd.pth')#'outputs/2022-08-06/10-21-50/cbfd.pth')#'outputs/2022-08-03/01-06-16/cbfd.pth')#
     #'outputs/2022-07-15/17-41-16/initial_train/constr.pth')#'outputs/2022-07-20/14-46-50/update_16/constr.pth')#
     #'outputs/2022-07-18/22-58-04/initial_train/constr.pth')#'/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets/outputs/2022-07-15/17-41-16/initial_train/constr.pth')#

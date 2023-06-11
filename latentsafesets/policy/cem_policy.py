@@ -28,7 +28,7 @@ class CEMSafeSetPolicy(Policy):
                  dynamics_model: PETSDynamics,
                  constraint_function: ConstraintEstimator,
                  goal_indicator: GoalIndicator,
-                 cbfdot_function: CBFdotEstimator,
+                 #cbfdot_function: CBFdotEstimator,
                  params):
         log.info("setting up safe set and dynamics model")
 
@@ -39,7 +39,7 @@ class CEMSafeSetPolicy(Policy):
         self.value_function = value_function
         self.constraint_function = constraint_function
         self.goal_indicator = goal_indicator
-        self.cbfdot_function = cbfdot_function
+        #self.cbfdot_function = cbfdot_function
         self.logdir = params['logdir']
 
         self.d_act = params['d_act']#2
@@ -124,8 +124,8 @@ class CEMSafeSetPolicy(Policy):
                 #print(self.std[0,0])
                 #import ipdb#it seems that they are lucky to run into the following case
                 if torch.isnan(self.std[0,0]):#self.std[0,0]==torch.nan:#this means that there is only one trajectory
-                    #ipdb.set_trace()
-                    print('elites.shape',elites.shape)#
+                    #ipdb.set_trace()#to save time
+                    #log.info('elites.shape: (%d,%d,%d)'%(elites.shape[0],elites.shape[1],elites.shape[2]))#
                     #print('nan',self.std[0,0])
                     #self.std=0.5*torch.rand_like(self.mean)+0.1#1e-2#is it just a work around?
                     self.std = 0.0 * torch.ones_like(self.mean)##1.0 * torch.ones_like(self.mean)# 1e-2#is it just a work around?
@@ -356,7 +356,7 @@ class CEMSafeSetPolicy(Policy):
                     #print(cbfdots.shape)
                 else:#if ignoring the cbf dot constraints
                     cbfdots_viols = torch.zeros((num_candidates, 1), device=ptu.TORCH_DEVICE)#no constraint violators!
-                self.ignore_safe_set=True#Including 18:47 Aug 4th as well as 15:14 Aug 5th
+                #self.ignore_safe_set=True#Including 18:47 Aug 4th as well as 15:14 Aug 5th
                 if not self.ignore_safe_set:
                     safe_set_all = self.safe_set.safe_set_probability(last_states, already_embedded=True)#get the prediction for the safety of the last state
                     safe_set_viols = torch.mean(safe_set_all#not max this time, but the mean of the 20 candidates

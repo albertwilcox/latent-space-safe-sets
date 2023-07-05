@@ -166,8 +166,55 @@ def visualize_safe_set(obs, safe_set, file, env=None):
 
 def visualize_onezero(obs, onezero, file, env=None):
     if issubclass(type(env), SimplePointBot):
-        spbu.evaluate_constraint_func(onezero, env, file=file, skip=2)
+        #print('entering this one!')
+        spbu.evaluate_constraint_func(onezero, env, file=file, skip=2)#61 in spb_utils
         return
+    #print('entering the other one!')
+    ss = onezero.prob(obs, already_embedded=True).squeeze()
+    obs = ptu.to_numpy(onezero.encoder.decode(ptu.torchify(obs)))
+    # print(ss)
+    ss = ss > 0.8
+    nonzeros = np.nonzero(ss)[0]
+    zeros = np.nonzero(np.logical_not(ss))[0]
+    # print(nonzeros, zeros)
+
+    if len(nonzeros) > 0:
+        nonzero_inds = nonzeros[np.random.randint(len(nonzeros), size=5)]
+    if len(zeros) > 0:
+        zero_inds = zeros[np.random.randint(len(zeros), size=5)]
+
+    if len(obs.shape) == 5:
+        obs = obs[:, 0]
+
+    fig, axs = plt.subplots(2, 5)
+
+    for i in range(5):
+        if len(nonzeros) > 0:
+            im = obs[nonzero_inds[i]].squeeze().transpose((1, 2, 0))
+        else:
+            im = np.zeros((64, 64, 3))
+        axs[0][i].imshow(im)
+        axs[0][i].set_title('In')
+        axs[0][i].set_axis_off()
+
+        if len(zeros) > 0:
+            im = obs[zero_inds[i]].squeeze().transpose((1, 2, 0))
+        else:
+            im = np.zeros((64, 64, 3))
+        axs[1][i].imshow(im)
+        axs[1][i].set_title('Out')
+        axs[1][i].set_axis_off()
+
+    plt.savefig(file)
+    plt.close()
+
+
+def visualize_cbfdot(obs, onezero, file, env=None):
+    if issubclass(type(env), SimplePointBot):
+        #print('entering this one!')
+        spbu.evaluate_cbfdot_func(onezero, env, file=file, skip=1,action=(0,0))#61 in spb_utils
+        return
+    #print('entering the other one!')
     ss = onezero.prob(obs, already_embedded=True).squeeze()
     obs = ptu.to_numpy(onezero.encoder.decode(ptu.torchify(obs)))
     # print(ss)

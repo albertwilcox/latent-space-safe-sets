@@ -1,3 +1,8 @@
+
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(1, '/home/jianning/PycharmProjects/pythonProject6/latent-space-safe-sets')
+
 from latentsafesets.rl_trainers import VAETrainer
 import latentsafesets.utils as utils
 from latentsafesets.utils import LossPlotter, EncoderDataLoader
@@ -7,14 +12,17 @@ import logging
 import os
 import pprint
 
+os.environ['TORCH_CUDA_ARCH_LIST']="8.6"
+
 log = logging.getLogger("main")
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':#no use of replay buffer
 
     params = parse_args()
 
     logdir = params['logdir']
+    print(logdir)
     os.makedirs(logdir)
     utils.init_logging(logdir)
 
@@ -24,7 +32,7 @@ if __name__ == '__main__':
 
     encoder_data_loader = EncoderDataLoader(params)
 
-    modules = utils.make_modules(params)
+    modules = utils.make_modules(params)#around 178 in utils.py#just load VAE
     encoder = modules['enc']
 
     loss_plotter = LossPlotter(logdir)

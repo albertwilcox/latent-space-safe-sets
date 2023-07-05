@@ -15,20 +15,20 @@ class VanillaVAE(nn.Module):
     def __init__(self, params):
         super(VanillaVAE, self).__init__()
 
-        self.d_obs = params['d_obs']
-        self.d_latent = params['d_latent']
-        self.kl_multiplier = params['enc_kl_multiplier']
+        self.d_obs = params['d_obs']#(3, 64, 64)
+        self.d_latent = params['d_latent']#32
+        self.kl_multiplier = params['enc_kl_multiplier']#1e-6
         self.trained = False
 
-        self.frame_stack = params['frame_stack']
-        self.encoder = VAEEncoder(self.d_obs, self.d_latent).to(ptu.TORCH_DEVICE)
+        self.frame_stack = params['frame_stack']#false by default
+        self.encoder = VAEEncoder(self.d_obs, self.d_latent).to(ptu.TORCH_DEVICE)#designate the observation dimension and latent dimension
         self.decoder = VAEDecoder(self.d_obs, self.d_latent).to(ptu.TORCH_DEVICE)
         self.transform = transforms.RandomResizedCrop(64, scale=(0.8, 1.0)) \
             if params['enc_data_aug'] \
-            else lambda x: x
+            else lambda x: x#true or false?
 
-        self.learning_rate = params['enc_lr']
-        param_list = list(self.encoder.parameters()) + list(self.decoder.parameters())
+        self.learning_rate = params['enc_lr']#1e-4 by default
+        param_list = list(self.encoder.parameters()) + list(self.decoder.parameters())#the parameters of the encoder-decoder network. not the hyperparameters
         self.optimizer = optim.Adam(param_list, lr=self.learning_rate)
 
     def forward(self, inputs):
@@ -38,7 +38,7 @@ class VanillaVAE(nn.Module):
     def encode(self, inputs):
         mu, log_std = self(inputs)
         std = torch.exp(log_std)
-        samples = torch.empty(mu.shape).normal_(mean=0, std=1).to(ptu.TORCH_DEVICE)
+        samples = torch.empty(mu.shape).normal_(mean=0, std=1).to(ptu.TORCH_DEVICE)#reparameterization trick
         encoding = mu + std * samples
         return encoding.detach()
 
@@ -66,7 +66,7 @@ class VanillaVAE(nn.Module):
     def update(self, obs):
 
         # Augment it
-        if self.frame_stack == 1:
+        if self.frame_stack == 1:#like in spb
             obs_in = np.array(
                 [np.array(self.transform(im)).transpose((2, 0, 1)) for im in obs]) / 255
             obs_in = ptu.torchify(obs_in)

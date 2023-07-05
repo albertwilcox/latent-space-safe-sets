@@ -1,12 +1,12 @@
 import latentsafesets.utils.pytorch_utils as ptu
-from latentsafesets.model import GenericNet
+from latentsafesets.model import GenericNet, GenericNetcbf
 from .interfaces import EncodedModule
 
 import torch
 import torch.nn as nn
 
 
-class ConstraintEstimator(nn.Module, EncodedModule):#supervised learning very similar to gi
+class CBFdotEstimator(nn.Module, EncodedModule):#supervised learning very similar to gi or constraint estimator
     """
     Simple constraint predictor using binary cross entropy
     """
@@ -15,21 +15,20 @@ class ConstraintEstimator(nn.Module, EncodedModule):#supervised learning very si
         """
         Initializes a constraint estimator
         """
-        super(ConstraintEstimator, self).__init__()
+        super(CBFdotEstimator, self).__init__()
         EncodedModule.__init__(self, encoder)
 
-        self.d_obs = params['d_obs']
-        self.d_latent = params['d_latent']
-        self.batch_size = params['constr_batch_size']
+        self.d_obs = params['d_obs']#(3,64,64)
+        self.d_latent = 4#2+2#params['d_latent']#32
+        self.batch_size = params['cbfd_batch_size']#256
         self.targ_update_counter = 0
-        self.loss_func = torch.nn.BCEWithLogitsLoss()
+        self.loss_func = torch.nn.SmoothL1Loss()#a regression loss#designate the loss function#torch.nn.BCEWithLogitsLoss()#
         self.trained = False
-
-        self.net = GenericNet(self.d_latent, 1, params['constr_n_hidden'],
-                              params['constr_hidden_size']) \
-            .to(ptu.TORCH_DEVICE)
-
-        lr = params['constr_lr']
+        #self.net = GenericNet(self.d_latent, 1, params['cbfd_n_hidden'], params['cbfd_hidden_size']).to(
+            #ptu.TORCH_DEVICE)#the network that uses relu activation
+        self.net = GenericNetcbf(self.d_latent, 1, params['cbfd_n_hidden'],params['cbfd_hidden_size']).to(ptu.TORCH_DEVICE)
+        #print(self.net)#input size 4, output size 1#the network that uses the tanh activation
+        lr = params['cbfd_lr']
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=lr)
 
     def forward(self, obs, already_embedded=False):
@@ -37,29 +36,30 @@ class ConstraintEstimator(nn.Module, EncodedModule):#supervised learning very si
         Returns inputs to sigmoid for probabilities
         """
         if not already_embedded:
-            embedding = self.encoder.encode(obs).detach()
+            embedding = obs#self.encoder.encode(obs).detach()#workaround#currently I am in the state space
         else:
             embedding = obs
-        log_probs = self.net(embedding)
+        #print('embedding.shape',embedding.shape)#torch.Size([1000,5,4])#torch.Size([256,4])#torch.Size([180,4])#
+        log_probs = self.net(embedding)#why 3 kinds of sizes?
         return log_probs
 
-    def prob(self, obs, already_embedded=False):
+    def cbfdots(self, obs, already_embedded=False):#the forward function for numpy input
         obs = ptu.torchify(obs)
         logits = self(obs, already_embedded)
-        probs = torch.sigmoid(logits)
+        probs = logits#torch.sigmoid(logits)#
         return ptu.to_numpy(probs)
 
-    def update(self, next_obs, constr, already_embedded=False):
+    def update(self, next_obs, constr, already_embedded=False):#the training process
         self.trained = True
-        next_obs = ptu.torchify(next_obs)
-        constr = ptu.torchify(constr)
+        next_obs = ptu.torchify(next_obs)#input
+        constr = ptu.torchify(constr)#output
 
         self.optimizer.zero_grad()
         loss = self.loss(next_obs, constr, already_embedded)
         loss.backward()
         self.step()
 
-        return loss.item(), {'constr': loss.item()}
+        return loss.item(), {'cbfd': loss.item()}
 
     def loss(self, next_obs, constr, already_embedded=False):
         logits = self(next_obs, already_embedded).squeeze()#.forward!

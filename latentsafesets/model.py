@@ -24,11 +24,11 @@ class GenericNet(nn.Module):
         layers = [nn.Linear(d_in, d_hidden), activation()]
         for _ in range(n_hidden - 1):
             layers.extend([nn.Linear(d_hidden, d_hidden), activation()])
-        layers.append(nn.Linear(d_hidden, d_out))
-        if last_activation is not None:
+        layers.append(nn.Linear(d_hidden, d_out))#the last layer!
+        if last_activation is not None:#additional
             layers.append(last_activation())
 
-        self.model = nn.Sequential(*layers)
+        self.model = nn.Sequential(*layers)#think about the uses of the star
 
     def forward(self, x):
  #       print(x.shape)
@@ -38,9 +38,9 @@ class GenericNet(nn.Module):
 class VAEEncoder(nn.Module):
     def __init__(self, d_obs, d_latent=32, image_channels=3, h_dim=256):
         super(VAEEncoder, self).__init__()
-        self.d_obs = d_obs
+        self.d_obs = d_obs#(3, 64, 64)
         self.d_in = d_obs if len(d_obs) == 3 else (d_obs[0] * d_obs[1], d_obs[2], d_obs[3])
-        self.out_dim = d_latent
+        self.out_dim = d_latent#32
         in_channels = image_channels if len(d_obs) == 3 else image_channels * d_obs[0]
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels, 32, kernel_size=4, stride=2),
@@ -59,15 +59,15 @@ class VAEEncoder(nn.Module):
 
     def forward(self, x):
 #        print(x.shape)
-        batch_dims = x.shape[:-len(self.d_obs)]
+        batch_dims = x.shape[:-len(self.d_obs)]#it is the -3 of the shape! not the -3 elements of x!
         if len(batch_dims) == 0:
             batch_dims = (1,)
         observation = x.reshape(-1, *self.d_in)
 
         z = self.encoder(observation)
-        mu = self.fc1(z)
+        mu = self.fc1(z)#fc1 and fc2 are not in consequence, but parallel
         log_std = self.fc2(z)
-        mu = mu.view(*batch_dims, -1)
+        mu = mu.view(*batch_dims, -1)#still some reshaping things, may need to google for details
         log_std = log_std.view(*batch_dims, -1)
         return mu, log_std
 
@@ -86,10 +86,10 @@ class VAEDecoder(nn.Module):
         self.d_obs = d_obs
         self.d_out = d_obs if len(d_obs) == 3 else (d_obs[0] * d_obs[1], d_obs[2], d_obs[3])
         self.d_latent = d_latent
-        out_channels = image_channels if len(d_obs) == 3 else image_channels * d_obs[0]
+        out_channels = image_channels if len(d_obs) == 3 else image_channels * d_obs[0]#in this case len(d_obs)=4, len(d_obs[0])=3
 
         self.decoder = nn.Sequential(
-            nn.Linear(d_latent, h_dim),
+            nn.Linear(d_latent, h_dim),#takes z as input
             UnFlatten(),
             nn.ConvTranspose2d(h_dim, 128, kernel_size=5, stride=2),
             nn.ReLU(),
@@ -101,7 +101,7 @@ class VAEDecoder(nn.Module):
             # nn.Sigmoid(),
         )
 
-    def forward(self, x):
+    def forward(self, x):#the x here is z, right?
         batch_dims = x.shape[:-1]
         if len(batch_dims) == 0:
             batch_dims = (1,)
@@ -114,6 +114,25 @@ class VAEDecoder(nn.Module):
         z = z.view(*batch_dims, *self.d_obs)
         return z
 
-    def decode(self, x):
+    def decode(self, x):#what is the usage?
         return self(x)
 
+class GenericNetcbf(nn.Module):
+
+    def __init__(self, d_in, d_out, n_hidden=2, d_hidden=128, activation=nn.Tanh,
+                 last_activation=None, **kwargs):
+        super(GenericNetcbf, self).__init__()
+
+        assert n_hidden >= 1, "Must have at least 1 hidden layer"
+        layers = [nn.Linear(d_in, d_hidden), activation()]
+        for _ in range(n_hidden - 1):
+            layers.extend([nn.Linear(d_hidden, d_hidden), activation()])
+        layers.append(nn.Linear(d_hidden, d_out))#the last layer!
+        if last_activation is not None:#additional
+            layers.append(last_activation())
+
+        self.model = nn.Sequential(*layers)#think about the uses of the star
+
+    def forward(self, x):
+ #       print(x.shape)
+        return self.model(x)
